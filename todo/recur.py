@@ -1,48 +1,28 @@
-#!/usr/bin/env python
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 TODO.TXT Cron Helper
-Author      : Graham Davies <grahamdaviez@gmail.com>
-License     : GPL, http://www.gnu.org/copyleft/gpl.html
-Project Page: http://code.google.com/p/todo-py
-Direct link : http://todo-py.googlecode.com/svn/trunk/todo_cron.py
-Modified    : 2007/07/22 Sean <schliden@gmail.com>
-            : Added support for warnings, reminders and
-            : checks for duplicate tasks b4 adding
+
+Modified version of http://todo-py.googlecode.com/svn/trunk/todo_cron.py
 """
 
-__version__   = "0.1.1-py"
-__revision__  = "$Revision$"
-__date__      = "2007/07/17"
-__author__    = "Graham Davies (grahamdaviez@gmail.com)"
-__copyright__ = "Copyleft 2006, Graham Davies"
-__license__   = "GPL"
-__history__   = "See http://todo-py.googlecode.com/svn/trunk/CHANGELOG"
+import re
+import os
+import time
+import logging
+import argparse
 
-import todo, re, sys, os, getopt, time
+TODO_DIR = '/home/skoenig/wiki/todo'
 
-# Local override - leave blank to use the normal todo.py directory
-TODO_DIR = ''
+logging.basicConfig(format='%(asctime)-15s %(levelname)s %(module)s: %(message)s')
+log = logging.getLogger(__name__)
 
-# Verbose - display extra info when running
-verbose = False
-
-# quiet - print nothing except errors, useful for cron
-quiet = False
-
-# keepREM = True retains the reminder date string when copying into todo.txt
-keepREM = False
-
-def help():
-    # print __doc__
-    text = """
-todo_cron.py Cron Helper for todo.py %s %s
-Usage: todo_cron.py [options]
-
+DESCRIPTION = \
+        """
 Adds tasks from recur.txt that match today's date to todo.txt file
-Requires todo.py to be in the PATH or same directory
-Should be run once per day to avoid duplicates (*todo)
-** Now checks for duplicate tasks before adding: 2007/07/25 <schliden@gmail.com> **
-Example crontab entry: 00 05 * * * /home/user/bin/todo_cron.py
+Example crontab entry: 00 05 * * * /home/user/bin/recur.py
+
 Date format based on that used by remind:
 
 {Wed} Take out trash
@@ -54,27 +34,23 @@ Date format based on that used by remind:
 {Nov 27 *5} Keep adding task for 5 days after event
 {Dec 01 +3} Add task 5 days before specified date
 
-Options:
- -h, --help     : Display this message
- -V,  --version : Print version number
- -d, --todo-dir : Use specified directory for files
-""" % (__version__, __revision__[1:-1])
-    print text
-    sys.exit()
+"""
 
-def setDirs(dir):
-    global RECUR_FILE, RECUR_BACKUP
+def set_dirs(dir):
+    global RECUR_FILE, RECUR_BACKUP, TODO_FILE
 
-    RECUR_FILE   = dir + os.path.sep + "recur.txt"
-    RECUR_BACKUP = dir + os.path.sep + "recur.bak"
-    TODO_FILE    = dir + os.path.sep + "todo.txt"
-    if verbose: print "Using file ", RECUR_FILE
+    RECUR_FILE = dir + os.path.sep + 'recur.txt'
+    RECUR_BACKUP = dir + os.path.sep + 'recur.bak'
+    TODO_FILE = dir + os.path.sep + 'todo.txt'
+    log.info('using file for recurring records: %s' % RECUR_FILE)
     return True
 
-def singleDay(rem, today):
+
+def single_day(rem, today):
     """Single Day - recur every month on this date eg. {22}"""
+
     if rem.isdigit():
-        event = time.strptime(rem, "%d")
+        event = time.strptime(rem, '%d')
         if event.tm_mday == today.tm_mday:
             return True, True
         else:
@@ -82,74 +58,88 @@ def singleDay(rem, today):
     else:
         return False, False
 
-def singleDoW(rem, today):
+
+def single_do_w(rem, today):
     """ Single DayOfWeek - recur if day matches eg. {Mon}"""
+
     try:
-        event = time.strptime(rem,"%a")
+        event = time.strptime(rem, '%a')
         if event.tm_wday == today.tm_wday:
             return True, True
-        else: return True, False
-    except (ValueError), why:
+        else:
+            return True, False
+    except ValueError:
         return False, False
 
-def monthDay(rem, today, warn=False, rep=False):
+
+def month_day(rem, today, warn=False, rep=False):
     """Month Day - add on this day every year eg. {Nov 22}"""
+
     try:
-        event = time.strptime(rem,"%b %d")
+        event = time.strptime(rem, '%b %d')
         # new code to handle warnings 2007/07/22
         if warn:
-             for i in range(1, warn):
-             	 if event.tm_mon == today.tm_mon and (event.tm_mday - i) == today.tm_mday:
-             	     return True, True
+            for i in range(1, warn):
+                if event.tm_mon == today.tm_mon and event.tm_mday - i == today.tm_mday:
+                    return True, True
         # new code to handle repeats 2007/07/22
         if rep:
-             for i in range(1, rep):
-             	 if event.tm_mon == today.tm_mon and (event.tm_mday + i) == today.tm_mday:
-             	     return True, True
+            for i in range(1, rep):
+                if event.tm_mon == today.tm_mon and event.tm_mday + i == today.tm_mday:
+                    return True, True
         # end new code
         if event.tm_mon == today.tm_mon and event.tm_mday == today.tm_mday:
             return True, True
-        else: return True, False
-    except (ValueError), why:
+        else:
+            return True, False
+    except ValueError:
         return False, False
 
-def monthDayYear(rem, today, warn=False, rep=False):
+
+def month_day_year(rem, today, warn=False, rep=False):
     """ Month Day Year - single event that doesn't recur eg. {Nov 22 2007}"""
+
     try:
-        event = time.strptime(rem,"%b %d %Y")
-        if (event.tm_year == today.tm_year and event.tm_mon == today.tm_mon
-                and event.tm_mday == today.tm_mday):
+        event = time.strptime(rem, '%b %d %Y')
+        if event.tm_year == today.tm_year and event.tm_mon == today.tm_mon and event.tm_mday == today.tm_mday:
             return True, True
-        else: return True, False
-    except (ValueError), why:
+        else:
+            return True, False
+    except ValueError:
         return False, False
 
-def hasWarning(rem, today):
+
+def has_warning(rem, today):
     """Month Day Warning - add Warning days before the date eg. {Nov 22 +5}"""
+
     re_rem = re.compile(r" \+(\d+)$")
     match = re.search(re_rem, rem)
     if match:
-        rem = re.sub(re_rem, "", rem)
+        rem = re.sub(re_rem, '', rem)
         return match.group(1), rem
     else:
         return False, False
 
-def hasRepeat(rem, today):
+
+def has_repeat(rem, today):
     """Month Day Repeat - add for Repeat days after the date eg. {Nov 22 *5}"""
+
     re_rem = re.compile(r" \*(\d+)$")
     match = re.search(re_rem, rem)
     if match:
-        rem = re.sub(re_rem, "", rem)
+        rem = re.sub(re_rem, '', rem)
         return match.group(1), rem
     else:
         return False, False
 
-def multiDoW(rem, today):
+
+def multi_do_w(rem, today):
     """Multiple DayOfWeek - recur each day that matches
     eg. {Mon Wed} or {Mon Tue Wed} or {Mon Tue Wed Thu Fri}"""
+
     words = rem.split()
     for day in words:
-        type, now = singleDoW(day, today)
+        type, now = single_do_w(day, today)
         if not type:
             # If one fails - they all fail
             return False, False
@@ -157,11 +147,13 @@ def multiDoW(rem, today):
             return True, True
     return True, False
 
-def multiDay(rem, today):
+
+def multi_day(rem, today):
     """Multiple Days - recur each day that matches eg. {1 14 28}"""
+
     words = rem.split()
     for day in words:
-        type, now = singleDay(day, today)
+        type, now = single_day(day, today)
         if not type:
             # If one fails - they all fail
             return False, False
@@ -169,44 +161,9 @@ def multiDay(rem, today):
             return True, True
     return True, False
 
-def parseREM(rem):
+
+def parse_rem(rem, today):
     """parses REM style date strings - returns True if event is today"""
-
-    today = time.localtime()
-
-    warnDays, newrem = hasWarning(rem, today)
-    if warnDays:
-        warnDays = int(warnDays)
-        rem = newrem
-
-    repeatDays, newrem = hasRepeat(rem, today)
-    if repeatDays:
-        repeatDays = int(repeatDays)
-        rem = newrem
-
-    type, now = singleDay(rem, today)
-    if type and now: return True
-    if type and not now: return False
-
-    type, now = multiDay(rem, today)
-    if type and now: return True
-    if type and not now: return False
-
-    type, now = singleDoW(rem, today)
-    if type and now: return True
-    if type and not now: return False
-
-    type, now = multiDoW(rem, today)
-    if type and now: return True
-    if type and not now: return False
-
-    type, now = monthDay(rem, today, warn=warnDays, rep=repeatDays)
-    if type and now: return True
-    if type and not now: return False
-
-    type, now = monthDayYear(rem, today, warn=warnDays, rep=repeatDays)
-    if type and now: return True
-    if type and not now: return False
 
     # 1st DayOfWeek after date
     # {Mon 15}
@@ -216,71 +173,137 @@ def parseREM(rem):
 
     # OMIT
 
-    #### Sub day --- no support planned
+    # ### Sub day --- no support planned
     # Times -- AT 5:00PM
     # {AT 5:00PM}
 
-def addTodayTasks(file):
-    """Add tasks occuring today from a file to the todo list"""
-    rem = todo.getDict(file)
-    for k,v in rem.iteritems():
-        if verbose: print "%3d: %s" % (k, v)
-        re_date = re.compile(r"{([^}]+)} ")
-        date = re.search(re_date, v)
-        if date:
-            isToday = parseREM(date.group(1)) # date.group(1) = date in Remind format: Wed, 18 +3, Jan 26 +4
-            if isToday:
-                task = re.sub(re_date, "", v)
-                if taskExists(task):
-                    if verbose: print "Exists: " + task
-                    continue
-                todo.add(task)
-        else:
-            if verbose: print "No date found for ", v
+    log.debug('try to parse "%s"' % rem)
 
-# new code to handle dupes 2007/07/25
-def taskExists(rem):
+    warnDays, newrem = has_warning(rem, today)
+    if warnDays:
+        warnDays = int(warnDays)
+        rem = newrem
+
+    repeatDays, newrem = has_repeat(rem, today)
+    if repeatDays:
+        repeatDays = int(repeatDays)
+        rem = newrem
+
+    type, now = single_day(rem, today)
+    if type and now:
+        return True
+    if type and not now:
+        return False
+
+    type, now = multi_day(rem, today)
+    if type and now:
+        return True
+    if type and not now:
+        return False
+
+    type, now = single_do_w(rem, today)
+    if type and now:
+        return True
+    if type and not now:
+        return False
+
+    type, now = multi_do_w(rem, today)
+    if type and now:
+        return True
+    if type and not now:
+        return False
+
+    type, now = month_day(rem, today, warn=warnDays, rep=repeatDays)
+    if type and now:
+        return True
+    if type and not now:
+        return False
+
+    type, now = month_day_year(rem, today, warn=warnDays, rep=repeatDays)
+    if type and now:
+        return True
+    if type and not now:
+        return False
+
+def add_today_tasks(file):
+    """Add tasks occuring today from a file to the todo list"""
+    today = time.localtime()
+    today_date = time.strftime('%F' , time.localtime())
+    rem = get_dict(file)
+    for k, v in rem.iteritems():
+        log.info('processing item [%s] = %s' % (k, v))
+        re_date = re.compile(r"{([^}]+)}")
+        date = re.search(re_date, k)
+        if date:
+            isToday = parse_rem(date.group(1), today)  # date.group(1) = date in Remind format: Wed, 18 +3, Jan 26 +4
+            if isToday:
+                for task in v:
+                    #if task_exists(task):
+                    #    log.info('task exists: %s' % task)
+                    #    continue
+                    log.info('adding task %s' % (task))
+                    add_task(task, today_date)
+        else:
+            log.info('unable to parse date from "%s %s"' % (k, v))
+
+def task_exists(rem):
     """Check for existing tasks in the TODO file"""
-    tasks = todo.getTaskDict()
+
+    tasks = get_task_dict()
     theSet = set(tasks.values())
     if rem in theSet:
         return True
     else:
         return False
 
-if __name__ == "__main__":
+def get_dict(file):
+    dict = {}
+    with open(file) as fd:
+        for line in fd.readlines():
+            pos = line.rfind('}')
+            if pos == -1:
+                log.error('unable to parse line "%s"' % line)
+                continue
+            date = line[:pos+1].strip()
+            task = line[pos+1:].strip()
+            if date in dict.keys():
+                dict[date].append(task)
+            else:
+                dict[date] = [task]
+    return dict
 
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hVvqd:',\
-            ['help', 'version','todo-dir='])
-    except (getopt.GetoptError), why:
-        print "Sorry - option not recognized.  Try -h for help"
-        sys.exit()
+def add_task(task, date):
+    with open(TODO_FILE, 'a') as fd:
+        fd.write('%s t:%s\n' % (task, date))
 
+def get_task_dict():
+    # @TODO: parse todo.txt 
+    task_dict = {}
+    with open(TODO_FILE) as fd:
+        for line in fd.readlines():
+            pass
 
-    for o, a in opts:
-        if o in ["-h"]:
-            help()
-        if o in ["-V", "--version"]:
-            print __version__, __revision__[1:-1]
-            sys.exit()
-        if o in ['-v']:
-            """Specify verbose from command line"""
-            todo.verbose = True
-            verbose = True
-        if o in ['-q']:
-            """Specify quiet from command line"""
-            todo.quiet = True
-            quiet = True
-        if o in ['-d', '--todo-dir']:
-            """Specify TODO_DIR from command line"""
-            TODO_DIR = a
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('-v', '--verbose', help='increase verbosity', action='count')
+    parser.add_argument('-u', '--usage', help='print usage', action='store_true')
+    parser.add_argument('-d', '--todo_dir', help='Specify TODO_DIR from command line')
+    args = parser.parse_args()
+
+    loglevel = logging.WARN
+    if args.verbose == 1:
+        loglevel = logging.INFO
+    if args.verbose >= 2:
+        loglevel = logging.DEBUG
+    log.setLevel(loglevel)
+
+    if args.usage:
+        help()
+
+    if args.todo_dir:
+        TODO_DIR = args.todo_dir
 
     # Options processed - ready to go
-    todo.setDirs(TODO_DIR)
-    setDirs(todo.TODO_DIR)
+    set_dirs(TODO_DIR)
 
-    # TODO Add checks to see that we are only run once per day
-    if (len(args) < 1):
-        """ Default action - should probably be help """
-        addTodayTasks(RECUR_FILE)
+    add_today_tasks(RECUR_FILE)
