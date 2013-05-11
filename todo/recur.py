@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-TODO.TXT Cron Helper
+TODO.TXT Recurring Todos Helper
 
-Modified version of http://todo-py.googlecode.com/svn/trunk/todo_cron.py
+Modified version of https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron.py
 """
 
 import re
 import os
 import time
+import codecs
 import logging
 import argparse
 
@@ -18,8 +19,9 @@ TODO_DIR = '/home/skoenig/wiki/todo'
 logging.basicConfig(format='%(asctime)-15s %(levelname)s %(module)s: %(message)s')
 log = logging.getLogger(__name__)
 
+TASK_RE = re.compile(r'(?P<priority>\([A-Z]\) )?(?P<task_head>.* )t:(?P<date>[^ ]*)(?P<task_tail>.*)')
 DESCRIPTION = \
-        """
+    """
 Adds tasks from recur.txt that match today's date to todo.txt file
 Example crontab entry: 00 05 * * * /home/user/bin/recur.py
 
@@ -35,6 +37,7 @@ Date format based on that used by remind:
 {Dec 01 +3} Add task 5 days before specified date
 
 """
+
 
 def set_dirs(dir):
     global RECUR_FILE, RECUR_BACKUP, TODO_FILE
@@ -225,10 +228,12 @@ def parse_rem(rem, today):
     if type and not now:
         return False
 
+
 def add_today_tasks(file):
     """Add tasks occuring today from a file to the todo list"""
+
     today = time.localtime()
-    today_date = time.strftime('%F' , time.localtime())
+    today_date = time.strftime('%F', time.localtime())
     rem = get_dict(file)
     for k, v in rem.iteritems():
         log.info('processing item [%s] = %s' % (k, v))
@@ -238,23 +243,26 @@ def add_today_tasks(file):
             isToday = parse_rem(date.group(1), today)  # date.group(1) = date in Remind format: Wed, 18 +3, Jan 26 +4
             if isToday:
                 for task in v:
-                    #if task_exists(task):
-                    #    log.info('task exists: %s' % task)
-                    #    continue
-                    log.info('adding task %s' % (task))
+                    if task_exists(task, today_date):
+                        log.info('task exists: %s' % task)
+                        continue
+                    log.info('adding task %s' % task)
                     add_task(task, today_date)
         else:
             log.info('unable to parse date from "%s %s"' % (k, v))
 
-def task_exists(rem):
-    """Check for existing tasks in the TODO file"""
 
-    tasks = get_task_dict()
-    theSet = set(tasks.values())
-    if rem in theSet:
+def task_exists(rem, date):
+    """Check for existing task for a date in the TODO file"""
+
+    tasks = get_tasks(date)
+    log.debug('tasks found for %s: %s' % (date, tasks))
+    log.debug('rem: %s' % rem)
+    if rem in tasks:
         return True
     else:
         return False
+
 
 def get_dict(file):
     dict = {}
@@ -264,24 +272,39 @@ def get_dict(file):
             if pos == -1:
                 log.error('unable to parse line "%s"' % line)
                 continue
-            date = line[:pos+1].strip()
-            task = line[pos+1:].strip()
+            date = line[:pos + 1].strip()
+            task = line[pos + 1:].strip()
             if date in dict.keys():
                 dict[date].append(task)
             else:
                 dict[date] = [task]
     return dict
 
+
 def add_task(task, date):
     with open(TODO_FILE, 'a') as fd:
         fd.write('%s t:%s\n' % (task, date))
 
-def get_task_dict():
-    # @TODO: parse todo.txt 
-    task_dict = {}
+
+def get_tasks(date):
+    ''' get tasks from todo.txt for date '''
+
+    tasks = []
     with open(TODO_FILE) as fd:
-        for line in fd.readlines():
-            pass
+        for line in fd.read().splitlines():
+            match = re.search(TASK_RE, line)
+            if match:
+                match_dict = match.groupdict()
+            if match_dict['date'] == date:
+                # add task with and w/h priority tag to get also tasks where priority was added later
+                task = '%s%s' % (match_dict['task_head'], match_dict['task_tail'])
+                tasks.append(' '.join(task.split()))
+                if match_dict['priority']:
+                    task = '%s %s' % (match_dict['priority'], task)
+                    tasks.append(' '.join(task.split()))
+
+    return tasks
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter)
