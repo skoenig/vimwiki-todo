@@ -55,6 +55,7 @@ def single_day(rem, today):
     if rem.isdigit():
         event = time.strptime(rem, '%d')
         if event.tm_mday == today.tm_mday:
+            log.debug('parsed %s as "single_day"' % rem)
             return True, True
         else:
             return True, False
@@ -67,7 +68,9 @@ def single_do_w(rem, today):
 
     try:
         event = time.strptime(rem, '%a')
+        log.debug(event)
         if event.tm_wday == today.tm_wday:
+            log.debug('parsed %s as "single_do_w"' % rem)
             return True, True
         else:
             return True, False
@@ -84,11 +87,13 @@ def month_day(rem, today, warn=False, rep=False):
         if warn:
             for i in range(1, warn):
                 if event.tm_mon == today.tm_mon and event.tm_mday - i == today.tm_mday:
+                    log.debug('parsed %s as "month_day"' % rem)
                     return True, True
         # new code to handle repeats 2007/07/22
         if rep:
             for i in range(1, rep):
                 if event.tm_mon == today.tm_mon and event.tm_mday + i == today.tm_mday:
+                    log.debug('parsed %s as "single_do_w" with repeats' % rem)
                     return True, True
         # end new code
         if event.tm_mon == today.tm_mon and event.tm_mday == today.tm_mday:
@@ -105,6 +110,7 @@ def month_day_year(rem, today, warn=False, rep=False):
     try:
         event = time.strptime(rem, '%b %d %Y')
         if event.tm_year == today.tm_year and event.tm_mon == today.tm_mon and event.tm_mday == today.tm_mday:
+            log.debug('parsed %s as "month_day_year"' % rem)
             return True, True
         else:
             return True, False
@@ -147,6 +153,7 @@ def multi_do_w(rem, today):
             # If one fails - they all fail
             return False, False
         if now:
+            log.debug('parsed %s as "multi_do_w"' % rem)
             return True, True
     return True, False
 
@@ -161,6 +168,7 @@ def multi_day(rem, today):
             # If one fails - they all fail
             return False, False
         if now:
+            log.debug('parsed %s as "multi_day"' % rem)
             return True, True
     return True, False
 
