@@ -1,0 +1,327 @@
+#!/bin/bash
+# Author : Sören König
+# License: GPL3, http://www.gnu.org/copyleft/gpl.html
+# Credit : Inspired by and based on:
+#   - Gina Trapiani's todo.txt https://github.com/ginatrapani/todo.txt-cli
+#   - Mark Wu's view plugin for todo.txt https://github.com/markwu/todo-cli-plugins
+
+export TODO_DIR=$( dirname $( readlink -e $0 ))
+export TODO_FILE="$TODO_DIR/todo.md"
+export TODOTXT_VERBOSE=0
+export TODOTXT_SORT_COMMAND=${TODOTXT_SORT_COMMAND:-env LC_COLLATE=C sort -f -k2} 
+export TODOTXT_FINAL_FILTER=${TODOTXT_FINAL_FILTER:-cat}
+
+# Get option
+option=$1;
+shift
+
+# Get rest of them
+term="$@"
+
+function usage() {
+    cat <<- EOF
+    $(basename $0) [OPTION] [TERM]
+      Show todo items containing TERM, grouped by OPTION, and displayed in
+      priority order. If no TERM provided, displays entire todo.txt.
+      OPTION:
+        context   : Show todo items group by context
+        date      : Show todo items group by date
+        nodate    : Show todo items group by date without date
+        past      : Show todo items group by date from today to past
+        future    : Show todo items group by date from today to future
+        today     : Show todo items group by date only today
+        yesterday : Show todo items group by date from today to yesterday
+        tomorrow  : Show todo items group by date from today to tomorrow
+        ?length   : Show todo items group by date from today to ?length
+                    ? could be signed(+-) or unsigned numbers.
+                    Length could be (days|weeks|months|years)
+      Example:
+        \$ $(basename $0) context  # Show todo items grouped by context
+        \$ $(basename $0) -3days   # Show todo items grouped by date from today to 3days before today
+        \$ $(basename $0) 4weeks   # Show todo items grouped by date from today to 4weeks after today
+    
+EOF
+    exit
+}
+
+function shellquote() {
+    typeset -r qq=\'; printf %s\\n "'${1//\'/${qq}\\${qq}${qq}}'";
+}
+
+function filtercommand() {
+    filter=${1:-}
+    shift
+    post_filter=${1:-}
+    shift
+
+    for search_term
+    do
+        ## See if the first character of $search_term is a dash
+        if [ "${search_term:0:1}" != '-' ]
+        then
+            ## First character isn't a dash: hide lines that don't match
+            ## this $search_term
+            filter="${filter:-}${filter:+ | }grep -i $(shellquote "$search_term")"
+        else
+            ## First character is a dash: hide lines that match this
+            ## $search_term
+            #
+            ## Remove the first character (-) before adding to our filter command
+            filter="${filter:-}${filter:+ | }grep -v -i $(shellquote "${search_term:1}")"
+        fi
+    done
+
+    [ -n "$post_filter" ] && {
+        filter="${filter:-}${filter:+ | }${post_filter:-}"
+    }
+
+    printf %s "$filter"
+}
+
+getPadding()
+{
+    ## We need one level of padding for each power of 10 $LINES uses.
+    LINES=$(sed -n '$ =' "${1:-$TODO_FILE}")
+    printf %s ${#LINES}
+}
+_format()
+{
+    # Parameters:    $1: todo input file; when empty formats stdin
+    #                $2: ITEM# number width; if empty auto-detects from $1 / $TODO_FILE.
+    # Precondition:  None
+    # Postcondition: $NUMTASKS and $TOTALTASKS contain statistics (unless $TODOTXT_VERBOSE=0).
+
+    FILE=$1
+    shift
+
+    ## Figure out how much padding we need to use, unless this was passed to us.
+    PADDING=${1:-$(getPadding "$FILE")}
+    shift
+
+    ## Number the file, then run the filter command,
+    ## then sort and mangle output some more
+    if [[ $TODOTXT_DISABLE_FILTER = 1 ]]; then
+        TODOTXT_FINAL_FILTER="cat"
+    fi
+    items=$(
+        if [ "$FILE" ]; then
+            sed = "$FILE"
+        else
+            sed =
+        fi                                                      \
+        | sed -e '''
+            N
+            s/^/     /
+            s/ *\([ 0-9]\{'"$PADDING"',\}\)\n/\1 /
+            /^[ 0-9]\{1,\} *$/d
+         '''
+    )
+
+    ## Build and apply the filter.
+    filter_command=$(filtercommand "${pre_filter_command:-}" "${post_filter_command:-}" "$@")
+    if [ "${filter_command}" ]; then
+        filtered_items=$(echo -n "$items" | eval "${filter_command}")
+    else
+        filtered_items=$items
+    fi
+    filtered_items=$(
+        echo -n "$filtered_items"                              \
+        | eval ${TODOTXT_SORT_COMMAND}                         \
+        | sed '''
+            s/'"${HIDE_PROJECTS_SUBSTITUTION:-^}"'//g
+            s/'"${HIDE_CONTEXTS_SUBSTITUTION:-^}"'//g
+            s/'"${HIDE_CUSTOM_SUBSTITUTION:-^}"'//g
+          '''                                                   \
+        | eval ${TODOTXT_FINAL_FILTER}                          \
+    )
+    [ "$filtered_items" ] && echo "$filtered_items"
+
+    if [ $TODOTXT_VERBOSE -gt 0 ]; then
+        NUMTASKS=$( echo -n "$filtered_items" | sed -n '$ =' )
+        TOTALTASKS=$( echo -n "$items" | sed -n '$ =' )
+    fi
+    if [ $TODOTXT_VERBOSE -gt 1 ]; then
+        echo "TODO DEBUG: Filter Command was: ${filter_command:-cat}"
+    fi
+}
+
+_list() {
+    local FILE="$1"
+    ## If the file starts with a "/" use absolute path. Otherwise,
+    ## try to find it in either $TODO_DIR or using a relative path
+    if [ "${1:0:1}" == / ]; then
+        ## Absolute path
+        src="$FILE"
+    elif [ -f "$TODO_DIR/$FILE" ]; then
+        ## Path relative to todo.sh directory
+        src="$TODO_DIR/$FILE"
+    elif [ -f "$FILE" ]; then
+        ## Path relative to current working directory
+        src="$FILE"
+    elif [ -f "$TODO_DIR/${FILE}.md" ]; then
+        ## Path relative to todo.sh directory, missing file extension
+        src="$TODO_DIR/${FILE}.md"
+    else
+        die "TODO: File $FILE does not exist."
+    fi
+
+    ## Get our search arguments, if any
+    shift ## was file name, new $1 is first search term
+
+    _format "$src" '' "$@"
+
+    if [ $TODOTXT_VERBOSE -gt 0 ]; then
+        echo "--"
+        echo "$(getPrefix "$src"): ${NUMTASKS:-0} of ${TOTALTASKS:-0} tasks shown"
+    fi
+}
+
+function context_view() {
+    # Show contexts in alphabetical order and todo items in priority order
+    echo "=====  Contexts  ====="
+    echo ""
+
+    # Find all contexts and sort
+    CONTEXTS=$(grep -o '[^  ]*@[^  ]\+' "$TODO_FILE" | grep '^@' | sort -u | sed 's/@//g')
+
+    # For each context show header and the list of todo items
+    for context in $CONTEXTS ; do
+        # Use core output function, does numbering and colouring for us
+        CONTEXT_LIST=$(_list "$TODO_FILE" "@$context\b" "$term" | sed 's/(^@|\ *@)[^[:cntrl:] ]\ */ /g')
+        if [[ -n "${CONTEXT_LIST}" ]]; then
+            echo "---  $context  ---"
+            echo "${CONTEXT_LIST}"
+            echo ""
+        fi
+    done
+
+    # Show todo items not associated to a context
+    CONTEXT_LIST=$(_list "$TODO_FILE" "$term" | grep -v "@[^ ]*\ *")
+    if [[ -n "${CONTEXT_LIST}" ]]; then
+        echo "---  Items without context  ---"
+        echo "${CONTEXT_LIST}"
+    fi
+}
+
+function date_view() {
+    #  Show dates in alphabetical order and todo items in priority order
+    echo "=====  Dates  ====="
+    echo ""
+
+    #  Find all dates and sort
+    DATES=$(grep -o '[^  ]*t:[^  ]\+' "$TODO_FILE" | grep '^t:' | sort -u | sed 's/^t://g')
+
+    #  Get option
+    option=$1
+
+    #  Get today
+    today=$(date -d $(date +%Y-%m-%d) +%s)
+
+    #  For each date show header and the list of todo items
+    for date in $DATES ; do
+        # Check it is a valid date or not
+        date_check $option $today $date
+        show="$?"
+        if [[ $show -eq 0 ]]; then
+            # If it is not a valid date, just do nothing
+            continue
+        fi
+
+        #  Use core output function, does numbering and colouring for us
+        DATE_LIST=$(_list "$TODO_FILE" "t:$date" "$term" | sed 's/\(^t:\|\ *t:\)[0-9-]*\ */ /g')
+        if [ -n "${DATE_LIST}" ]; then
+            echo  "---  $date  ---"
+            echo  "${DATE_LIST}"
+            echo  ""
+        fi
+    done
+
+    #  Show todo items not associated to a date
+    re="^(date|nodate)$"
+    if [[ "$option" =~ $re ]]; then
+        DATE_LIST=$(_list "$TODO_FILE" "$term" | grep -v "t:[0-9-]*")
+        if [ -n "${DATE_LIST}" ]; then
+            echo "---  Items without date  ---"
+            echo "${DATE_LIST}"
+        fi
+    fi
+}
+
+function date_check() {
+    # Assign variables
+    threshold=$1
+    today=$2
+    _date=$(date -d "$3" +%s)
+
+    # Check if the date is valid or not
+    # return:
+    #   1: If the date is valid
+    #   0: If the date is invalid
+    case $threshold in
+    'future')
+        if [[ "$_date" -ge "$today" ]]; then
+            return 1
+        fi
+        ;;
+    'past')
+        if [[ "$_date" -le "$today" ]]; then
+            return 1
+        fi
+        ;;
+    'nodate')
+        return 0
+        ;;
+    'date')
+        return 1
+        ;;
+    *)
+        if [[ "$threshold" -eq "$today" ]]; then
+            if [[ "$_date" -eq "$today" ]]; then
+                return 1
+            fi
+        elif [[ "$threshold" -gt "$today" ]]; then
+            if [[ ( "$_date" -ge "$today" ) && ( "$_date" -le "$threshold" ) ]]; then
+                return 1
+            fi
+        elif [[ "$threshold" -lt "$today" ]]; then
+            if [[ ( "$_date" -le "$today" ) && ( "$_date" -ge "$threshold" ) ]]; then
+                return 1
+            fi
+        fi
+        ;;
+    esac
+
+    return 0
+}
+
+function edit() {
+    $EDITOR $TODO_FILE
+}
+
+# Validate the input options
+re="^(help|context|edit|date|nodate|future|past|today|tomorrow|yesterday|([+-][0-9]+|[0-9]+)(days|weeks|months|years))$"
+if [[ "$option" =~ $re ]]; then
+    case $option in
+    'help')
+        usage
+        ;;
+    'context')
+        context_view
+        ;;
+    'edit')
+        edit
+        ;;
+    *)
+        re="^(date|nodate|future|past)$"
+        if [[ ! ( "$option" =~ $re ) ]]; then
+            option=$(date -d $(date -d $option +%Y-%m-%d) +%s)
+        fi
+
+        date_view $option
+        ;;
+    esac
+else
+    echo "Error: Unrecognized option \"$option\"."
+    echo "Try \"$(basename $0) help\" to get more information."
+    exit 1
+fi
