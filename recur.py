@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-TODO.TXT Recurring Todos Helper
+TODO.TXT Recurring Todos Helper, adapted to work with vimwiki's checklists
 
 Modified version of https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron.py
 """
@@ -19,10 +19,10 @@ TODO_DIR = '/home/skoenig/wiki/todo'
 logging.basicConfig(format='%(asctime)-15s %(levelname)s %(module)s: %(message)s')
 log = logging.getLogger(__name__)
 
-TASK_RE = re.compile(r'(?P<priority>\([A-Z]\) )?(?P<task_head>.* )t:(?P<date>[^ ]*)(?P<task_tail>.*)')
+TASK_RE = re.compile(r'- [ ]\s*(?P<priority>\([A-Z]\) )?(?P<task_head>.* )t:(?P<date>[^ ]*)(?P<task_tail>.*)')
 DESCRIPTION = \
     """
-Adds tasks from recur.txt that match today's date to todo.txt file
+Adds tasks from recur.txt that match today's date to todo file
 Example crontab entry: 00 05 * * * /home/user/bin/recur.py
 
 Date format based on that used by remind:
@@ -44,7 +44,7 @@ def set_dirs(dir):
 
     RECUR_FILE = dir + os.path.sep + 'recur.txt'
     RECUR_BACKUP = dir + os.path.sep + 'recur.bak'
-    TODO_FILE = dir + os.path.sep + 'todo.txt'
+    TODO_FILE = dir + os.path.sep + 'todo.md'
     log.info('using file for recurring records: %s' % RECUR_FILE)
     return True
 
@@ -291,18 +291,19 @@ def get_dict(file):
 
 def add_task(task, date):
     with open(TODO_FILE, 'a') as fd:
-        fd.write('%s t:%s\n' % (task, date))
+        fd.write('- [ ] %s t:%s\n' % (task, date))
 
 
 def get_tasks(date):
-    ''' get tasks from todo.txt for date '''
+    ''' get tasks from todo file for date '''
 
     tasks = []
     with open(TODO_FILE) as fd:
         for line in fd.read().splitlines():
             match = re.search(TASK_RE, line)
-            if match:
-                match_dict = match.groupdict()
+            if not match:
+                continue
+            match_dict = match.groupdict()
             if match_dict['date'] == date:
                 # add task with and w/h priority tag to get also tasks where priority was added later
                 task = '%s%s' % (match_dict['task_head'], match_dict['task_tail'])
