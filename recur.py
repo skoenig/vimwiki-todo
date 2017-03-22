@@ -14,7 +14,7 @@ import codecs
 import logging
 import argparse
 
-TODO_DIR = '/home/skoenig/wiki/todo'
+TODO_DIR = os.path.dirname(os.path.realpath(__file__))
 
 logging.basicConfig(format='%(asctime)-15s %(levelname)s %(module)s: %(message)s')
 log = logging.getLogger(__name__)
