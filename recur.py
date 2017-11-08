@@ -18,7 +18,7 @@ TODO_DIR = os.path.dirname(os.path.realpath(__file__))
 logging.basicConfig(format='%(asctime)-15s %(levelname)s %(module)s: %(message)s')
 log = logging.getLogger(__name__)
 
-TASK_RE = re.compile(r'- [ ]\s*(?P<priority>\([A-Z]\) )?(?P<task_head>.* )t:(?P<date>[^ ]*)(?P<task_tail>.*)')
+TASK_RE = re.compile(r'- \[ \]\s*(?P<priority>([A-Z]))? (?P<task_head>.* )t:(?P<date>[^ ]*)(?P<task_tail>.*)')
 DESCRIPTION = \
     """
 Adds tasks from recur.txt that match today's date to todo file
