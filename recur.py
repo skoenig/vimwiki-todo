@@ -10,7 +10,6 @@ Modified version of https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron
 import re
 import os
 import time
-import codecs
 import logging
 import argparse
 
