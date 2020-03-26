@@ -182,12 +182,12 @@ function context_view() {
     echo ""
 
     # Find all contexts and sort
-    CONTEXTS=$(grep -o '[^  ]*@[^  ]\+' "$TODO_FILE" | grep '^@' | sort -u | sed 's/@//g')
+    CONTEXTS=$(grep -o '[^  ]*:[^  ]\+' "$TODO_FILE" | grep '^:' | sort -u | sed 's/://g')
 
     # For each context show header and the list of todo items
     for context in $CONTEXTS ; do
         # Use core output function, does numbering and colouring for us
-        CONTEXT_LIST=$(_list "$TODO_FILE" "@$context\b" "$term" | sed 's/(^@|\ *@)[^[:cntrl:] ]\ */ /g')
+        CONTEXT_LIST=$(_list "$TODO_FILE" ":$context\b" "$term" | sed 's/(^:|\ *:)[^[:cntrl:] ]\ */ /g')
         if [[ -n "${CONTEXT_LIST}" ]]; then
             echo "---  $context  ---"
             echo "${CONTEXT_LIST}"
@@ -196,7 +196,7 @@ function context_view() {
     done
 
     # Show todo items not associated to a context
-    CONTEXT_LIST=$(_list "$TODO_FILE" "$term" | grep -v "@[^ ]*\ *")
+    CONTEXT_LIST=$(_list "$TODO_FILE" "$term" | grep -v ":[^ ]*\ *")
     if [[ -n "${CONTEXT_LIST}" ]]; then
         echo "---  Items without context  ---"
         echo "${CONTEXT_LIST}"
