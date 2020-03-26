@@ -1,6 +1,16 @@
+This is a subset of [todo.txt](http://todotxt.org/) modified to work together with [vimwiki](https://vimwiki.github.io/) task lists in markdown mode and some features like recurring tasks and future / past views.
 
 ## Setup
-clone this repo into your vimwiki's folder, create a `recur.txt` file like this:
+Clone this repo into your vimwiki folder, and symlink the `todo` script into your `$PATH`:
+
+```
+sudo ln -s $PWD/todo /usr/local/bin/
+```
+
+`todo` is your command line tool to interact with a file named `todo.md`, have a look at it's commands with `todo help`.
+
+
+To automate the creation of recurring tasks, create a `recur.txt` file in the same directory like this:
 ```
 {Wed} Take out trash
 {Mon Wed Fri} backup filesystem
@@ -15,10 +25,3 @@ clone this repo into your vimwiki's folder, create a `recur.txt` file like this:
 ```
 sudo ln -s $PWD/recur.py /etc/cron.daily/add_recurring_todos
 ```
-
-If you like, you can also symlink the todo script into your `$PATH`:
-
-```
-sudo ln -s $PWD/todo /usr/local/bin/
-```
-
