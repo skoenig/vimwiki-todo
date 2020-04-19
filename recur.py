@@ -30,7 +30,7 @@ Date format based on that used by remind:
 {Mon Wed Fri} backup filesystem
 {29} pay rent check every month on the 29th
 {1 15} do on 1st and 15th day of the month
-{Nov 29} @email birthday card every year to someone
+{Nov 29} :email: birthday card every year to someone
 {Nov 22 2007} Eat turkey
 {Nov 27 *5} Keep adding task for 5 days after event
 {Dec 01 +3} Add task 5 days before specified date
