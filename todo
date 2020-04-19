@@ -8,7 +8,7 @@
 export TODO_DIR=$( dirname $( readlink -e $0 ))
 export TODO_FILE="$TODO_DIR/todo.md"
 export TODOTXT_VERBOSE=0
-export TODOTXT_SORT_COMMAND=${TODOTXT_SORT_COMMAND:-env LC_COLLATE=C sort -f -k2} 
+export TODOTXT_SORT_COMMAND=${TODOTXT_SORT_COMMAND:-env LC_COLLATE=C sort -f -k2}
 export TODOTXT_FINAL_FILTER=${TODOTXT_FINAL_FILTER:-cat}
 
 # Get option
@@ -22,8 +22,9 @@ function usage() {
     cat <<- EOF
     $(basename $0) [OPTION] [TERM]
       Show todo items containing TERM, grouped by OPTION, and displayed in
-      priority order. If no TERM provided, displays entire todo.txt.
+      priority order. If no TERM provided, displays entire todo file.
       OPTION:
+        edit      : Open todo file with your default editor
         context   : Show todo items group by context
         date      : Show todo items group by date
         nodate    : Show todo items group by date without date
@@ -39,7 +40,7 @@ function usage() {
         \$ $(basename $0) context  # Show todo items grouped by context
         \$ $(basename $0) -3days   # Show todo items grouped by date from today to 3days before today
         \$ $(basename $0) 4weeks   # Show todo items grouped by date from today to 4weeks after today
-    
+
 EOF
     exit
 }
@@ -299,17 +300,17 @@ function edit() {
 }
 
 # Validate the input options
-re="^(help|context|edit|date|nodate|future|past|today|tomorrow|yesterday|([+-][0-9]+|[0-9]+)(days|weeks|months|years))$"
+re="^(help|edit|context|date|nodate|future|past|today|tomorrow|yesterday|([+-][0-9]+|[0-9]+)(days|weeks|months|years))$"
 if [[ "$option" =~ $re ]]; then
     case $option in
     'help')
         usage
         ;;
-    'context')
-        context_view
-        ;;
     'edit')
         edit
+        ;;
+    'context')
+        context_view
         ;;
     *)
         re="^(date|nodate|future|past)$"
