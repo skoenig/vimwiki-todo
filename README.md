@@ -25,3 +25,9 @@ To automate the creation of recurring tasks, create a `recur.txt` file in the sa
 ```
 sudo ln -s $PWD/recur.py /etc/cron.daily/add_recurring_todos
 ```
+
+## Tests
+```
+python -m pip install -e .[tests]
+python -m pytest
+```
