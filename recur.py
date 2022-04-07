@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -15,12 +15,13 @@ import argparse
 
 TODO_DIR = os.path.dirname(os.path.realpath(__file__))
 
-logging.basicConfig(format='%(asctime)-15s %(levelname)s %(module)s: %(message)s')
+logging.basicConfig(format="%(asctime)-15s %(levelname)s %(module)s: %(message)s")
 log = logging.getLogger(__name__)
 
-TASK_RE = re.compile(r'- \[ \]\s*(?P<priority>([A-Z]))? (?P<task_head>.* )t:(?P<date>[^ ]*)(?P<task_tail>.*)')
-DESCRIPTION = \
-    """
+TASK_RE = re.compile(
+    r"- \[ \]\s*(?P<priority>([A-Z]))? (?P<task_head>.* )t:(?P<date>[^ ]*)(?P<task_tail>.*)"
+)
+DESCRIPTION = """
 Adds tasks from recur.txt that match today's date to todo file
 Example crontab entry: 00 05 * * * /home/user/bin/recur.py
 
@@ -38,13 +39,13 @@ Date format based on that used by remind:
 """
 
 
-def set_dirs(dir):
+def set_dirs(todo_dir):
     global RECUR_FILE, RECUR_BACKUP, TODO_FILE
 
-    RECUR_FILE = dir + os.path.sep + 'recur.txt'
-    RECUR_BACKUP = dir + os.path.sep + 'recur.bak'
-    TODO_FILE = dir + os.path.sep + 'todo.md'
-    log.info('using file for recurring records: %s' % RECUR_FILE)
+    RECUR_FILE = todo_dir + os.path.sep + "recur.txt"
+    RECUR_BACKUP = todo_dir + os.path.sep + "recur.bak"
+    TODO_FILE = todo_dir + os.path.sep + "todo.md"
+    log.info("using file for recurring records: %s" % RECUR_FILE)
     return True
 
 
@@ -52,7 +53,7 @@ def single_day(rem, today):
     """Single Day - recur every month on this date eg. {22}"""
 
     if rem.isdigit():
-        event = time.strptime(rem, '%d')
+        event = time.strptime(rem, "%d")
         if event.tm_mday == today.tm_mday:
             log.debug('parsed %s as "single_day"' % rem)
             return True, True
@@ -63,10 +64,10 @@ def single_day(rem, today):
 
 
 def single_do_w(rem, today):
-    """ Single DayOfWeek - recur if day matches eg. {Mon}"""
+    """Single DayOfWeek - recur if day matches eg. {Mon}"""
 
     try:
-        event = time.strptime(rem, '%a')
+        event = time.strptime(rem, "%a")
         log.debug(event)
         if event.tm_wday == today.tm_wday:
             log.debug('parsed %s as "single_do_w"' % rem)
@@ -81,7 +82,7 @@ def month_day(rem, today, warn=False, rep=False):
     """Month Day - add on this day every year eg. {Nov 22}"""
 
     try:
-        event = time.strptime(rem, '%b %d')
+        event = time.strptime(rem, "%b %d")
         # new code to handle warnings 2007/07/22
         if warn:
             for i in range(1, warn):
@@ -104,11 +105,15 @@ def month_day(rem, today, warn=False, rep=False):
 
 
 def month_day_year(rem, today, warn=False, rep=False):
-    """ Month Day Year - single event that doesn't recur eg. {Nov 22 2007}"""
+    """Month Day Year - single event that doesn't recur eg. {Nov 22 2007}"""
 
     try:
-        event = time.strptime(rem, '%b %d %Y')
-        if event.tm_year == today.tm_year and event.tm_mon == today.tm_mon and event.tm_mday == today.tm_mday:
+        event = time.strptime(rem, "%b %d %Y")
+        if (
+            event.tm_year == today.tm_year
+            and event.tm_mon == today.tm_mon
+            and event.tm_mday == today.tm_mday
+        ):
             log.debug('parsed %s as "month_day_year"' % rem)
             return True, True
         else:
@@ -123,7 +128,7 @@ def has_warning(rem, today):
     re_rem = re.compile(r" \+(\d+)$")
     match = re.search(re_rem, rem)
     if match:
-        rem = re.sub(re_rem, '', rem)
+        rem = re.sub(re_rem, "", rem)
         return match.group(1), rem
     else:
         return False, False
@@ -135,7 +140,7 @@ def has_repeat(rem, today):
     re_rem = re.compile(r" \*(\d+)$")
     match = re.search(re_rem, rem)
     if match:
-        rem = re.sub(re_rem, '', rem)
+        rem = re.sub(re_rem, "", rem)
         return match.group(1), rem
     else:
         return False, False
@@ -236,24 +241,26 @@ def parse_rem(rem, today):
         return False
 
 
-def add_today_tasks(file):
-    """Add tasks occuring today from a file to the todo list"""
+def add_today_tasks(config_file):
+    """Add tasks occuring today from the config file to the todo list"""
 
     today = time.localtime()
-    today_date = time.strftime('%F', time.localtime())
-    rem = get_dict(file)
-    for k, v in rem.iteritems():
-        log.info('processing item [%s] = %s' % (k, v))
+    today_date = time.strftime("%F", time.localtime())
+    rem = get_dict(config_file)
+    for k, v in list(rem.items()):
+        log.info("processing item [%s] = %s" % (k, v))
         re_date = re.compile(r"{([^}]+)}")
         date = re.search(re_date, k)
         if date:
-            isToday = parse_rem(date.group(1), today)  # date.group(1) = date in Remind format: Wed, 18 +3, Jan 26 +4
+            isToday = parse_rem(
+                date.group(1), today
+            )  # date.group(1) = date in Remind format: Wed, 18 +3, Jan 26 +4
             if isToday:
                 for task in v:
                     if task_exists(task, today_date):
-                        log.info('task exists: %s' % task)
+                        log.info("task exists: %s" % task)
                         continue
-                    log.info('adding task %s' % task)
+                    log.info("adding task %s" % task)
                     add_task(task, today_date)
         else:
             log.info('unable to parse date from "%s %s"' % (k, v))
@@ -263,38 +270,38 @@ def task_exists(rem, date):
     """Check for existing task for a date in the TODO file"""
 
     tasks = get_tasks(date)
-    log.debug('tasks found for %s: %s' % (date, tasks))
-    log.debug('rem: %s' % rem)
+    log.debug("tasks found for %s: %s" % (date, tasks))
+    log.debug("rem: %s" % rem)
     if rem in tasks:
         return True
     else:
         return False
 
 
-def get_dict(file):
-    dict = {}
-    with open(file) as fd:
+def get_dict(config_file):
+    config = {}
+    with open(config_file) as fd:
         for line in fd.readlines():
-            pos = line.rfind('}')
+            pos = line.rfind("}")
             if pos == -1:
                 log.error('unable to parse line "%s"' % line)
                 continue
-            date = line[:pos + 1].strip()
-            task = line[pos + 1:].strip()
-            if date in dict.keys():
-                dict[date].append(task)
+            date = line[: pos + 1].strip()
+            task = line[pos + 1 :].strip()
+            if date in list(config.keys()):
+                config[date].append(task)
             else:
-                dict[date] = [task]
-    return dict
+                config[date] = [task]
+    return config
 
 
 def add_task(task, date):
-    with open(TODO_FILE, 'a') as fd:
-        fd.write('- [ ] %s t:%s\n' % (task, date))
+    with open(TODO_FILE, "a") as fd:
+        fd.write("- [ ] %s t:%s\n" % (task, date))
 
 
 def get_tasks(date):
-    ''' get tasks from todo file for date '''
+    """get tasks from todo file for date"""
 
     tasks = []
     with open(TODO_FILE) as fd:
@@ -303,22 +310,24 @@ def get_tasks(date):
             if not match:
                 continue
             match_dict = match.groupdict()
-            if match_dict['date'] == date:
+            if match_dict["date"] == date:
                 # add task with and w/h priority tag to get also tasks where priority was added later
-                task = '%s%s' % (match_dict['task_head'], match_dict['task_tail'])
-                tasks.append(' '.join(task.split()))
-                if match_dict['priority']:
-                    task = '%s %s' % (match_dict['priority'], task)
-                    tasks.append(' '.join(task.split()))
+                task = "%s%s" % (match_dict["task_head"], match_dict["task_tail"])
+                tasks.append(" ".join(task.split()))
+                if match_dict["priority"]:
+                    task = "%s %s" % (match_dict["priority"], task)
+                    tasks.append(" ".join(task.split()))
 
     return tasks
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('-v', '--verbose', help='increase verbosity', action='count')
-    parser.add_argument('-u', '--usage', help='print usage', action='store_true')
-    parser.add_argument('-d', '--todo_dir', help='Specify TODO_DIR from command line')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter
+    )
+    parser.add_argument("-v", "--verbose", help="increase verbosity", action="count")
+    parser.add_argument("-u", "--usage", help="print usage", action="store_true")
+    parser.add_argument("-d", "--todo_dir", help="Specify TODO_DIR from command line")
     args = parser.parse_args()
 
     loglevel = logging.WARN
