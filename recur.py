@@ -9,6 +9,7 @@ Modified version of https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron
 
 import re
 import os
+import sys
 import time
 import logging
 import argparse
@@ -280,6 +281,10 @@ def task_exists(rem, date):
 
 def get_dict(config_file):
     config = {}
+    if not os.path.isfile(config_file):
+        log.error("config file {} does not exist".format(config_file))
+        sys.exit(1)
+
     with open(config_file) as fd:
         for line in fd.readlines():
             pos = line.rfind("}")
