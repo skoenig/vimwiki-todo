@@ -326,7 +326,6 @@ if __name__ == "__main__":
         description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument("-v", "--verbose", help="increase verbosity", action="count")
-    parser.add_argument("-u", "--usage", help="print usage", action="store_true")
     parser.add_argument("-d", "--todo_dir", help="Specify TODO_DIR from command line")
     args = parser.parse_args()
 
@@ -336,9 +335,6 @@ if __name__ == "__main__":
     if args.verbose >= 2:
         loglevel = logging.DEBUG
     log.setLevel(loglevel)
-
-    if args.usage:
-        help()
 
     if args.todo_dir:
         TODO_DIR = args.todo_dir
