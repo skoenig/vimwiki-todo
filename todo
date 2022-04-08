@@ -1,12 +1,8 @@
-#!/bin/bash
-# Author : Sören König
-# License: GPL3, http://www.gnu.org/copyleft/gpl.html
-# Credit : Inspired by and based on:
-#   - Gina Trapiani's todo.txt https://github.com/ginatrapani/todo.txt-cli
-#   - Mark Wu's view plugin for todo.txt https://github.com/markwu/todo-cli-plugins
+#!/usr/bin/env bash
 
 export TODO_DIR=$( dirname $( readlink -e $0 ))
 export TODO_FILE="$TODO_DIR/todo.md"
+export DONE_FILE="$TODO_DIR/done.md"
 export TODOTXT_VERBOSE=0
 export TODOTXT_SORT_COMMAND=${TODOTXT_SORT_COMMAND:-env LC_COLLATE=C sort -f -k2}
 export TODOTXT_FINAL_FILTER=${TODOTXT_FINAL_FILTER:-cat}
@@ -18,13 +14,15 @@ shift
 # Get rest of them
 term="$@"
 
-function usage() {
+usage()
+{
     cat <<- EOF
     $(basename $0) [OPTION] [TERM]
       Show todo items containing TERM, grouped by OPTION, and displayed in
       priority order. If no TERM provided, displays entire todo file.
       OPTION:
         edit      : Open todo file with your default editor
+        archive   : Move all done tasks from TODO_FILE to DONE_FILE and remove blank lines
         context   : Show todo items group by context
         date      : Show todo items group by date
         nodate    : Show todo items group by date without date
@@ -45,11 +43,13 @@ EOF
     exit
 }
 
-function shellquote() {
+shellquote()
+{
     typeset -r qq=\'; printf %s\\n "'${1//\'/${qq}\\${qq}${qq}}'";
 }
 
-function filtercommand() {
+filtercommand()
+{
     filter=${1:-}
     shift
     post_filter=${1:-}
@@ -79,6 +79,36 @@ function filtercommand() {
     printf %s "$filter"
 }
 
+_list() {
+    local FILE="$1"
+    ## If the file starts with a "/" use absolute path. Otherwise,
+    ## try to find it in either $TODO_DIR or using a relative path
+    if [ "${1:0:1}" == / ]; then
+        ## Absolute path
+        src="$FILE"
+    elif [ -f "$TODO_DIR/$FILE" ]; then
+        ## Path relative to todo.sh directory
+        src="$TODO_DIR/$FILE"
+    elif [ -f "$FILE" ]; then
+        ## Path relative to current working directory
+        src="$FILE"
+    elif [ -f "$TODO_DIR/${FILE}.md" ]; then
+        ## Path relative to todo.sh directory, missing file extension
+        src="$TODO_DIR/${FILE}.md"
+    else
+        die "TODO: File $FILE does not exist."
+    fi
+
+    ## Get our search arguments, if any
+    shift ## was file name, new $1 is first search term
+
+    _format "$src" '' "$@"
+
+    if [ $TODOTXT_VERBOSE -gt 0 ]; then
+        echo "--"
+        echo "$(getPrefix "$src"): ${NUMTASKS:-0} of ${TOTALTASKS:-0} tasks shown"
+    fi
+}
 getPadding()
 {
     ## We need one level of padding for each power of 10 $LINES uses.
@@ -137,47 +167,18 @@ _format()
     )
     [ "$filtered_items" ] && echo "$filtered_items"
 
-    if [ $TODOTXT_VERBOSE -gt 0 ]; then
+    if [ "$TODOTXT_VERBOSE" -gt 0 ]; then
         NUMTASKS=$( echo -n "$filtered_items" | sed -n '$ =' )
         TOTALTASKS=$( echo -n "$items" | sed -n '$ =' )
     fi
-    if [ $TODOTXT_VERBOSE -gt 1 ]; then
+    if [ "$TODOTXT_VERBOSE" -gt 1 ]; then
         echo "TODO DEBUG: Filter Command was: ${filter_command:-cat}"
     fi
 }
 
-_list() {
-    local FILE="$1"
-    ## If the file starts with a "/" use absolute path. Otherwise,
-    ## try to find it in either $TODO_DIR or using a relative path
-    if [ "${1:0:1}" == / ]; then
-        ## Absolute path
-        src="$FILE"
-    elif [ -f "$TODO_DIR/$FILE" ]; then
-        ## Path relative to todo.sh directory
-        src="$TODO_DIR/$FILE"
-    elif [ -f "$FILE" ]; then
-        ## Path relative to current working directory
-        src="$FILE"
-    elif [ -f "$TODO_DIR/${FILE}.md" ]; then
-        ## Path relative to todo.sh directory, missing file extension
-        src="$TODO_DIR/${FILE}.md"
-    else
-        die "TODO: File $FILE does not exist."
-    fi
 
-    ## Get our search arguments, if any
-    shift ## was file name, new $1 is first search term
-
-    _format "$src" '' "$@"
-
-    if [ $TODOTXT_VERBOSE -gt 0 ]; then
-        echo "--"
-        echo "$(getPrefix "$src"): ${NUMTASKS:-0} of ${TOTALTASKS:-0} tasks shown"
-    fi
-}
-
-function context_view() {
+context_view()
+{
     # Show contexts in alphabetical order and todo items in priority order
     echo "=====  Contexts  ====="
     echo ""
@@ -204,7 +205,8 @@ function context_view() {
     fi
 }
 
-function date_view() {
+date_view()
+{
     #  Show dates in alphabetical order and todo items in priority order
     echo "=====  Dates  ====="
     echo ""
@@ -248,7 +250,8 @@ function date_view() {
     fi
 }
 
-function date_check() {
+date_check()
+{
     # Assign variables
     threshold=$1
     today=$2
@@ -295,12 +298,13 @@ function date_check() {
     return 0
 }
 
-function edit() {
+edit()
+{
     $EDITOR $TODO_FILE
 }
 
 # Validate the input options
-re="^(help|edit|context|date|nodate|future|past|today|tomorrow|yesterday|([+-][0-9]+|[0-9]+)(days|weeks|months|years))$"
+re="^(help|edit|archive|context|date|nodate|future|past|today|tomorrow|yesterday|([+-][0-9]+|[0-9]+)(days|weeks|months|years))$"
 if [[ "$option" =~ $re ]]; then
     case $option in
     'help')
@@ -308,6 +312,16 @@ if [[ "$option" =~ $re ]]; then
         ;;
     'edit')
         edit
+        ;;
+    'archive' )
+        # defragment blank lines
+        sed -i.bak -e '/./!d' "$TODO_FILE"
+        [ "$TODOTXT_VERBOSE" -gt 0 ] && grep "^- \[[✓x]\]" "$TODO_FILE"
+        grep "^- \[[✓x]\]" "$TODO_FILE" >> "$DONE_FILE"
+        sed -i.bak '/^- \[[✓x]\]/d' "$TODO_FILE"
+        if [ "$TODOTXT_VERBOSE" -gt 0 ]; then
+            echo "TODO: $TODO_FILE archived."
+        fi
         ;;
     'context')
         context_view
