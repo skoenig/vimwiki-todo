@@ -316,9 +316,13 @@ if [[ "$option" =~ $re ]]; then
     'archive' )
         # defragment blank lines
         sed -i.bak -e '/./!d' "$TODO_FILE"
-        [ "$TODOTXT_VERBOSE" -gt 0 ] && grep "^- \[[✓x]\]" "$TODO_FILE"
-        grep "^- \[[✓x]\]" "$TODO_FILE" >> "$DONE_FILE"
-        sed -i.bak '/^- \[[✓x]\]/d' "$TODO_FILE"
+        [ "$TODOTXT_VERBOSE" -gt 0 ] && grep -Pzo '(?m)((^- \[[✓X]\])( +.+\n*)+)' "$TODO_FILE" | tr -d '\0'
+        # store all completed tasks and any subtasks for comparing to TODO_FILE
+        grep -Pzo '(?m)((^- \[[✓X]\])( +.+\n*)+)' "$TODO_FILE" | tr -d '\0' > done.tmp
+        # remaning tasks is TODO_FILE without completed tasks; order should not matter here
+        comm --nocheck-order -3 "$TODO_FILE" done.tmp > todo.tmp && mv todo.tmp "$TODO_FILE"
+        # archive completed tasks
+        cat done.tmp >> "$DONE_FILE" && rm -f done.tmp
         if [ "$TODOTXT_VERBOSE" -gt 0 ]; then
             echo "TODO: $TODO_FILE archived."
         fi
