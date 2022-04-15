@@ -21,6 +21,7 @@ usage()
       Show todo items containing TERM, grouped by OPTION, and displayed in
       priority order. If no TERM provided, displays entire todo file.
       OPTION:
+        add       : Add a single task to TODO_FILE
         edit      : Open todo file with your default editor
         archive   : Move all done tasks from TODO_FILE to DONE_FILE and remove blank lines
         context   : Show todo items group by context
@@ -41,6 +42,24 @@ usage()
 
 EOF
     exit
+}
+
+die()
+{
+    echo "$*"
+    exit 1
+}
+
+_addto() {
+    file="$1"
+    input="$2"
+
+    echo "- [ ] $input" >> "$file"
+    if [ "$TODOTXT_VERBOSE" -gt 0 ]; then
+        TASKNUM=$(sed -n '$ =' "$file")
+        echo "$TASKNUM $input"
+        echo "$file: $TASKNUM added."
+    fi
 }
 
 shellquote()
@@ -304,11 +323,20 @@ edit()
 }
 
 # Validate the input options
-re="^(help|edit|archive|context|date|nodate|future|past|today|tomorrow|yesterday|([+-][0-9]+|[0-9]+)(days|weeks|months|years))$"
+re="^(help|add|edit|archive|context|date|nodate|future|past|today|tomorrow|yesterday|([+-][0-9]+|[0-9]+)(days|weeks|months|years))$"
 if [[ "$option" =~ $re ]]; then
     case $option in
     'help')
         usage
+        ;;
+    'add')
+        if [ -z "$1" ]; then
+            echo -n "Add: "
+            read -e -r input
+        else
+            input=$*
+        fi
+        _addto "$TODO_FILE" "$input"
         ;;
     'edit')
         edit
