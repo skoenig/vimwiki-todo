@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# === HEAVY LIFTING ===
+shopt -s extglob extquote
+
 export TODO_DIR=$( dirname $( readlink -e $0 ))
 export TODO_FILE="$TODO_DIR/todo.md"
 export DONE_FILE="$TODO_DIR/done.md"
@@ -7,20 +10,12 @@ export TODOTXT_VERBOSE=0
 export TODOTXT_SORT_COMMAND=${TODOTXT_SORT_COMMAND:-env LC_COLLATE=C sort -f -k2}
 export TODOTXT_FINAL_FILTER=${TODOTXT_FINAL_FILTER:-cat}
 
-# Get option
-option=$1;
-shift
-
-# Get rest of them
-term="$@"
-
 usage()
 {
     cat <<- EOF
-    $(basename $0) [OPTION] [TERM]
-      Show todo items containing TERM, grouped by OPTION, and displayed in
-      priority order. If no TERM provided, displays entire todo file.
-      OPTION:
+    $(basename $0) [ACTION] [OPTION]
+
+      ACTIONS:
         add       : Add a single task to TODO_FILE
         edit      : Open todo file with your default editor
         archive   : Move all done tasks from TODO_FILE to DONE_FILE and remove blank lines
@@ -32,17 +27,14 @@ usage()
         today     : Show todo items group by date only today
         yesterday : Show todo items group by date from today to yesterday
         tomorrow  : Show todo items group by date from today to tomorrow
-        ?length   : Show todo items group by date from today to ?length
-                    ? could be signed(+-) or unsigned numbers.
-                    Length could be (days|weeks|months|years)
-      Example:
-        \$ $(basename $0) context  # Show todo items grouped by context
-        \$ $(basename $0) -3days   # Show todo items grouped by date from today to 3days before today
-        \$ $(basename $0) 4weeks   # Show todo items grouped by date from today to 4weeks after today
-
 EOF
     exit
 }
+
+ACTION=${1}
+[ -z "$ACTION" ] && usage
+shift
+term="$@"
 
 die()
 {
@@ -128,12 +120,14 @@ _list() {
         echo "$(getPrefix "$src"): ${NUMTASKS:-0} of ${TOTALTASKS:-0} tasks shown"
     fi
 }
+
 getPadding()
 {
     ## We need one level of padding for each power of 10 $LINES uses.
     LINES=$(sed -n '$ =' "${1:-$TODO_FILE}")
     printf %s ${#LINES}
 }
+
 _format()
 {
     # Parameters:    $1: todo input file; when empty formats stdin
@@ -194,7 +188,6 @@ _format()
         echo "TODO DEBUG: Filter Command was: ${filter_command:-cat}"
     fi
 }
-
 
 context_view()
 {
@@ -322,10 +315,9 @@ edit()
     $EDITOR $TODO_FILE
 }
 
-# Validate the input options
-re="^(help|add|edit|archive|context|date|nodate|future|past|today|tomorrow|yesterday|([+-][0-9]+|[0-9]+)(days|weeks|months|years))$"
-if [[ "$option" =~ $re ]]; then
-    case $option in
+# == HANDLE ACTION ==
+action=$( printf "%s\n" "$ACTION" | tr '[:upper:]' '[:lower:]' )
+case $action in
     'help')
         usage
         ;;
@@ -358,17 +350,15 @@ if [[ "$option" =~ $re ]]; then
     'context')
         context_view
         ;;
-    *)
+    @(date|nodate|past|future|today|yesterday|tomorrow))
         re="^(date|nodate|future|past)$"
-        if [[ ! ( "$option" =~ $re ) ]]; then
-            option=$(date -d $(date -d $option +%Y-%m-%d) +%s)
+        if [[ ! ( "$action" =~ $re ) ]]; then
+            action=$(date -d $(date -d $action +%Y-%m-%d) +%s)
         fi
 
-        date_view $option
+        date_view $action
         ;;
-    esac
-else
-    echo "Error: Unrecognized option \"$option\"."
-    echo "Try \"$(basename $0) help\" to get more information."
-    exit 1
-fi
+    *)
+        usage
+        ;;
+esac
