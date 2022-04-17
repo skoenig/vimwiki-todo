@@ -12,22 +12,22 @@ export TODOTXT_FINAL_FILTER=${TODOTXT_FINAL_FILTER:-cat}
 
 usage()
 {
-    cat <<- EOF
-    $(basename $0) [ACTION] [OPTION]
+cat <<- EOF
+$(basename $0) [ACTION] [OPTION]
 
-      ACTIONS:
-        add       : Add a single task to TODO_FILE
-        list | ls : List all tasks in TODO_FILE
-        edit      : Open todo file with your default editor
-        archive   : Move all done tasks from TODO_FILE to DONE_FILE and remove blank lines
-        context   : Show todo items group by context
-        date      : Show todo items group by date
-        nodate    : Show todo items group by date without date
-        past      : Show todo items group by date from today to past
-        future    : Show todo items group by date from today to future
-        today     : Show todo items group by date only today
-        yesterday : Show todo items group by date from today to yesterday
-        tomorrow  : Show todo items group by date from today to tomorrow
+ACTIONS:
+add       : Add a single task to TODO_FILE
+list | ls : List all tasks in TODO_FILE
+edit      : Open TODO_FILE with your default editor
+archive   : Move all done tasks from TODO_FILE to DONE_FILE and remove blank lines
+context   : Show todo items group by context
+date      : Show todo items group by date
+nodate    : Show todo items group by date without date
+past      : Show todo items group by date from today to past
+future    : Show todo items group by date from today to future
+today     : Show todo items group by date only today
+yesterday : Show todo items group by date from today to yesterday
+tomorrow  : Show todo items group by date from today to tomorrow
 EOF
     exit
 }
@@ -290,11 +290,6 @@ date_check()
     return 0
 }
 
-edit()
-{
-    $EDITOR $TODO_FILE
-}
-
 # == HANDLE ACTION ==
 action=$( printf "%s\n" "$ACTION" | tr '[:upper:]' '[:lower:]' )
 case $action in
@@ -315,7 +310,7 @@ case $action in
         _list "$TODO_FILE" "$@"
         ;;
     'edit')
-        edit
+        $EDITOR "$TODO_FILE"
         ;;
     'archive' )
         # defragment blank lines
