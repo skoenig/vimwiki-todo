@@ -127,7 +127,7 @@ _list() {
     _format "$src" "$@"
 
     if [ $TODOTXT_VERBOSE -gt 0 ]; then
-        echo "--"
+        echo "---"
         echo "$(getPrefix "$src"): ${NUMTASKS:-0} of ${TOTALTASKS:-0} tasks shown"
     fi
 }
@@ -180,7 +180,7 @@ _format()
 context_view()
 {
     # Show contexts in alphabetical order
-    echo "=====  Contexts  ====="
+    echo "# Contexts"
     echo ""
 
     # Find all contexts and sort
@@ -191,24 +191,17 @@ context_view()
         # Use core output function, does numbering and colouring for us
         CONTEXT_LIST=$(_list "$TODO_FILE" ":$context\b" "$term" | sed 's/(^:|\ *:)[^[:cntrl:] ]\ */ /g')
         if [[ -n "${CONTEXT_LIST}" ]]; then
-            echo "---  $context  ---"
+            echo "## $context"
             echo "${CONTEXT_LIST}"
             echo ""
         fi
     done
-
-    # Show todo items not associated to a context
-    CONTEXT_LIST=$(_list "$TODO_FILE" "$term" | grep -v ":[^ ]*\ *")
-    if [[ -n "${CONTEXT_LIST}" ]]; then
-        echo "---  Items without context  ---"
-        echo "${CONTEXT_LIST}"
-    fi
 }
 
 date_view()
 {
     #  Show dates in alphabetical order
-    echo "=====  Dates  ====="
+    echo "# Dates"
     echo ""
 
     #  Find all dates and sort
@@ -233,18 +226,17 @@ date_view()
         #  Use core output function, does numbering and colouring for us
         DATE_LIST=$(_list "$TODO_FILE" "t:$date" "$term" | sed 's/\(^t:\|\ *t:\)[0-9-]*\ */ /g')
         if [ -n "${DATE_LIST}" ]; then
-            echo  "---  $date  ---"
+            echo  "## $date"
             echo  "${DATE_LIST}"
             echo  ""
         fi
     done
 
     #  Show todo items not associated to a date
-    re="^(date|nodate)$"
-    if [[ "$option" =~ $re ]]; then
+    if [[ "$option" = "nodate" ]]; then
         DATE_LIST=$(_list "$TODO_FILE" "$term" | grep -v "t:[0-9-]*")
         if [ -n "${DATE_LIST}" ]; then
-            echo "---  Items without date  ---"
+            echo "## Items without date"
             echo "${DATE_LIST}"
         fi
     fi
