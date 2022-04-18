@@ -31,3 +31,7 @@ sudo ln -s $PWD/recur.py /etc/cron.daily/add_recurring_todos
 python -m pip install -e .[tests]
 python -m pytest
 ```
+
+## License
+
+[GNU General Public License v3.0](LICENSE)
