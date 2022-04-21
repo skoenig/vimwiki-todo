@@ -22,8 +22,7 @@ Content of the `recur.txt` follows a format based on that used by remind:
 
 ## Tests
 ```
-python -m pip install -e .[tests]
-python -m pytest
+make test
 ```
 
 ## License
