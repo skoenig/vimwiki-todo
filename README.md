@@ -1,4 +1,34 @@
-This is a subset of [todo.txt](http://todotxt.org/) modified to work together with [vimwiki](https://vimwiki.github.io/) task lists in markdown mode and some features like recurring tasks and future / past views.
+# todo
+
+This here is a script based on and inspired by Gina Trapani's [todo.txt](http://todotxt.org/), reduced to only the essential commands and modified to work with [vimwiki](https://vimwiki.github.io/) todo lists in markdown mode.
+
+## Why yet another todo list manager?
+Todo list managers are a dime a dozen, so why another one? It's simple: I've tried many (great for procrastinating) and haven't found another one that has the exact features I wanted. So I wrote my own.
+
+Some concepts from [todo.txt](http://todotxt.org/) such as projects are removed for simplicity, priorities can be expressed by moving tasks higher in the todo list ;), contexts have been implemented with vimwiki tags, and there is some additional functionality such as recurring tasks and listing tasks based on their due date.
+
+## Usage
+Vimwiki todo list have following format:
+```
+- [X] implement 'archive' command
+- [ ] add some more info to the README
+    - [ ] add an intro
+    - [ ] add some quick examples
+- [ ] commit and push t:2022-05-01
+```
+
+Here are some quick examples how to use the CLI:
+
+- Add a task: `todo add take the car to the workshop`
+- List all tasks: `todo ls`
+- List tasks which contain the term 'car': `todo ls car`
+- List tasks grouped by context: `todo context` (you can also filter by term)
+- List tasks whose due date has past: `todo past`
+- List tasks that are due tomorrow: `todo tomorrow`
+- Edit the todo list with your default editor: `todo edit`
+- Move all checked off tasks to the archive file: `todo archive`
+
+For all commands, use the `help` command.
 
 ## Installation
 Run `make install` to install `todo` into `TODO_DIR` (defaults to `~/vimwiki`).
