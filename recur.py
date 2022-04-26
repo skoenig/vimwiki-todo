@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-TODO.TXT Recurring Todos Helper, adapted to work with vimwiki's checklists
-
-Modified version of https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron.py
-"""
-
 import re
 import os
 import sys
@@ -24,7 +18,6 @@ TASK_RE = re.compile(
 )
 DESCRIPTION = """
 Adds tasks from recur.txt that match today's date to todo file
-Example crontab entry: 00 05 * * * /home/user/bin/recur.py
 
 Date format based on that used by remind:
 
@@ -36,15 +29,13 @@ Date format based on that used by remind:
 {Nov 22 2007} Eat turkey
 {Nov 27 *5} Keep adding task for 5 days after event
 {Dec 01 +3} Add task 5 days before specified date
-
 """
 
 
 def set_dirs(todo_dir):
-    global RECUR_FILE, RECUR_BACKUP, TODO_FILE
+    global RECUR_FILE, TODO_FILE
 
     RECUR_FILE = todo_dir + os.path.sep + "recur.txt"
-    RECUR_BACKUP = todo_dir + os.path.sep + "recur.bak"
     TODO_FILE = todo_dir + os.path.sep + "todo.md"
     log.info("using file for recurring records: %s" % RECUR_FILE)
     return True
@@ -344,7 +335,6 @@ if __name__ == "__main__":
     if args.todo_dir:
         TODO_DIR = args.todo_dir
 
-    # Options processed - ready to go
     set_dirs(TODO_DIR)
 
     add_today_tasks(RECUR_FILE)

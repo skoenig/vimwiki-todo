@@ -5,7 +5,7 @@ This here is a script based on and inspired by Gina Trapani's [todo.txt](http://
 ## Why yet another todo list manager?
 Todo list managers are a dime a dozen, so why another one? It's simple: I've tried many (great for procrastinating) and haven't found another one that has the exact features I wanted. So I wrote my own.
 
-Some concepts from [todo.txt](http://todotxt.org/) such as projects are removed for simplicity, priorities can be expressed by moving tasks higher in the todo list ;), contexts have been implemented with vimwiki tags, and there is some additional functionality such as recurring tasks and listing tasks based on their due date.
+Some concepts from [todo.txt](http://todotxt.org/) such as projects are removed for simplicity, priorities can be expressed by moving tasks higher in the todo list ;), contexts have been implemented with vimwiki tags, and there is some additional functionality such as recurring tasks (based on [Graham Davies' todo.txt cron helper](https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron.py)) and listing tasks based on their due date.
 
 ## Usage
 Vimwiki todo list have following format:
