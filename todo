@@ -10,8 +10,7 @@ export TODOTXT_VERBOSE=0
 export TODOTXT_SORT_COMMAND=${TODOTXT_SORT_COMMAND:-env LC_COLLATE=C sort -f -k2}
 export TODOTXT_FINAL_FILTER=${TODOTXT_FINAL_FILTER:-cat}
 
-usage()
-{
+usage() {
 cat <<- EOF
 $(basename $0) [ACTION] [OPTION]
 
@@ -34,17 +33,14 @@ EOF
 
 ACTION=${1}
 [ -z "$ACTION" ] && usage
-shift
-term="$@"
+shift  ## Was ACTION, new $1 is first search term
 
-die()
-{
+die() {
     echo "$*"
     exit 1
 }
 
-getPrefix()
-{
+getPrefix() {
     # Parameters:    $1: todo file; empty means $TODO_FILE.
     # Returns:       Uppercase FILE prefix to be used in place of "TODO:" where
     #                a different todo file can be specified.
@@ -65,13 +61,11 @@ _addto() {
     fi
 }
 
-shellquote()
-{
+shellquote() {
     typeset -r qq=\'; printf %s\\n "'${1//\'/${qq}\\${qq}${qq}}'";
 }
 
-filtercommand()
-{
+filtercommand() {
     filter=${1:-}
     shift
     post_filter=${1:-}
@@ -132,8 +126,7 @@ _list() {
     fi
 }
 
-_format()
-{
+_format() {
     # Parameters:    $1: todo input file; when empty formats stdin
     # Precondition:  None
     # Postcondition: $NUMTASKS and $TOTALTASKS contain statistics (unless $TODOTXT_VERBOSE=0).
@@ -177,8 +170,7 @@ _format()
     fi
 }
 
-context_view()
-{
+context_view() {
     # Show contexts in alphabetical order
     echo "# Contexts"
     echo ""
@@ -189,7 +181,7 @@ context_view()
     # For each context show header and the list of todo items
     for context in $CONTEXTS ; do
         # Use core output function, does numbering and colouring for us
-        CONTEXT_LIST=$(_list "$TODO_FILE" ":$context\b" "$term" | sed 's/(^:|\ *:)[^[:cntrl:] ]\ */ /g')
+        CONTEXT_LIST=$(_list "$TODO_FILE" ":$context\b" "$@" | sed 's/(^:|\ *:)[^[:cntrl:] ]\ */ /g')
         if [[ -n "${CONTEXT_LIST}" ]]; then
             echo "## $context"
             echo "${CONTEXT_LIST}"
@@ -198,8 +190,7 @@ context_view()
     done
 }
 
-date_view()
-{
+date_view() {
     #  Show dates in alphabetical order
     echo "# Dates"
     echo ""
@@ -209,6 +200,7 @@ date_view()
 
     #  Get option
     option=$1
+    shift
 
     #  Get today
     today=$(date -d $(date +%Y-%m-%d) +%s)
@@ -224,7 +216,7 @@ date_view()
         fi
 
         #  Use core output function, does numbering and colouring for us
-        DATE_LIST=$(_list "$TODO_FILE" "t:$date" "$term" | sed 's/\(^t:\|\ *t:\)[0-9-]*\ */ /g')
+        DATE_LIST=$(_list "$TODO_FILE" "t:$date" "$@" | sed 's/\(^t:\|\ *t:\)[0-9-]*\ */ /g')
         if [ -n "${DATE_LIST}" ]; then
             echo  "## $date"
             echo  "${DATE_LIST}"
@@ -234,7 +226,7 @@ date_view()
 
     #  Show todo items not associated to a date
     if [[ "$option" = "nodate" ]]; then
-        DATE_LIST=$(_list "$TODO_FILE" "$term" | grep -v "t:[0-9-]*")
+        DATE_LIST=$(_list "$TODO_FILE" "$@" | grep -v "t:[0-9-]*")
         if [ -n "${DATE_LIST}" ]; then
             echo "## Items without date"
             echo "${DATE_LIST}"
@@ -242,8 +234,7 @@ date_view()
     fi
 }
 
-date_check()
-{
+date_check() {
     # Assign variables
     threshold=$1
     today=$2
@@ -306,7 +297,6 @@ case $action in
         _addto "$TODO_FILE" "$input"
         ;;
     'list' | 'ls' )
-        shift  ## Was ls; new $1 is first search term
         _list "$TODO_FILE" "$@"
         ;;
     'edit')
@@ -327,7 +317,7 @@ case $action in
         fi
         ;;
     'context')
-        context_view
+        context_view "$@"
         ;;
     @(date|nodate|past|future|today|yesterday|tomorrow))
         re="^(date|nodate|future|past)$"
@@ -335,7 +325,7 @@ case $action in
             action=$(date -d $(date -d $action +%Y-%m-%d) +%s)
         fi
 
-        date_view $action
+        date_view "$action" "$@"
         ;;
     *)
         usage
