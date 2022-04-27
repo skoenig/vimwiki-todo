@@ -1,4 +1,4 @@
-# todo
+# vimwiki-todo
 
 This here is a script based on and inspired by Gina Trapani's [todo.txt](http://todotxt.org/), reduced to only the essential commands and modified to work with [vimwiki](https://vimwiki.github.io/) todo lists in markdown mode.
 
