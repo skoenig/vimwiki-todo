@@ -22,6 +22,7 @@ installdirs:
 install: installdirs
 	$(INSTALL_PROGRAM) todo $(DESTDIR)$(tododir)/todo && \
 		ln -sf $(DESTDIR)$(tododir)/todo $(DESTDIR)$(bindir)/todo
+	@echo "todo" >> $(DESTDIR)$(tododir)/.gitignore
 
 uninstall:
 	rm -f $(DESTDIR)$(tododir)/todo $(DESTDIR)$(bindir)/todo
@@ -29,6 +30,7 @@ uninstall:
 install-recur: installdirs
 	$(INSTALL_PROGRAM) recur.py $(DESTDIR)$(tododir)/recur.py && \
 		sudo ln -sf $(DESTDIR)$(tododir)/recur.py /etc/cron.daily/add_recurring_todos
+	@echo "recur.py" >> $(DESTDIR)$(tododir)/.gitignore
 
 uninstall-recur:
 	sudo rm -f $(DESTDIR)$(tododir)/recur.py /etc/cron.daily/add_recurring_todos
