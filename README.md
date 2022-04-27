@@ -8,7 +8,7 @@ Todo list managers are a dime a dozen, so why another one? It's simple: I've tri
 Some concepts from [todo.txt](http://todotxt.org/) such as projects are removed for simplicity, priorities can be expressed by moving tasks higher in the todo list ;), contexts have been implemented with vimwiki tags, and there is some additional functionality such as recurring tasks (based on [Graham Davies' todo.txt cron helper](https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron.py)) and listing tasks based on their due date.
 
 ## Usage
-Vimwiki todo list have following format:
+Vimwiki todo lists have the following format:
 ```
 - [X] implement 'archive' command
 - [ ] add some more info to the README
@@ -17,7 +17,9 @@ Vimwiki todo list have following format:
 - [ ] commit and push t:2022-05-01
 ```
 
-Here are some quick examples how to use the CLI:
+`todo` is your command line tool to interact with a todo list named `todo.md`, have a look at all commands with `todo help`.
+
+Here are some quick examples how to use `todo`:
 
 - Add a task: `todo add take the car to the workshop`
 - List all tasks: `todo ls`
@@ -28,12 +30,8 @@ Here are some quick examples how to use the CLI:
 - Edit the todo list with your default editor: `todo edit`
 - Move all checked off tasks to the archive file: `todo archive`
 
-For all commands, use the `help` command.
-
 ## Installation
 Run `make install` to install `todo` into `TODO_DIR` (defaults to `~/vimwiki`).
-
-`todo` is your command line tool to interact with a file named `todo.md`, have a look at it's commands with `todo help`.
 
 To automate the creation of recurring tasks, you will need to setup `recur.py` as a daily cron job. This is best suited for people who work with their workstation every day anyhow. For everyone else, [anacron](https://linux.die.net/man/8/anacron) might be the solution.
 
