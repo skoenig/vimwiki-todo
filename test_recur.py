@@ -96,7 +96,7 @@ class TestRecur:
     def test_add_task(self, todo_file):
         recur.add_task("take out the trash", "2022-01-01")
         with open(recur.TODO_FILE) as fh:
-            assert fh.read() == todo_file + "- [ ] take out the trash t:2022-01-01\n"
+            assert fh.read() == "- [ ] take out the trash t:2022-01-01\n" + todo_file
 
     def test_get_tasks(self, todo_file):
         assert recur.get_tasks("Mon") == []
@@ -117,4 +117,4 @@ class TestRecur:
         with open(recur.TODO_FILE) as fh:
             todos = fh.readlines()
 
-        assert todos[-1] == time.strftime("- [ ] pick up milk t:%F\n", now)
+        assert todos[0] == time.strftime("- [ ] pick up milk t:%F\n", now)

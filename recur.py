@@ -292,8 +292,10 @@ def get_dict(config_file):
 
 
 def add_task(task, date):
-    with open(TODO_FILE, "a") as fd:
-        fd.write("- [ ] %s t:%s\n" % (task, date))
+    with open(TODO_FILE, "r+") as fd:
+        content = fd.read()
+        fd.seek(0)
+        fd.write("- [ ] %s t:%s\n%s" % (task, date, content))
 
 
 def get_tasks(date):
