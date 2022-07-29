@@ -314,8 +314,9 @@ case $action in
         [ "$TODOTXT_VERBOSE" -gt 0 ] && grep -Pzo '(?m)((^- \[[✓X]\])( +.+\n*)+)' "$TODO_FILE" | tr -d '\0'
         # store all completed tasks and any subtasks for comparing to TODO_FILE
         grep -Pzo '(?m)((^- \[[✓X]\])( +.+\n*)+)' "$TODO_FILE" | tr -d '\0' > done.tmp
-        # remaning tasks is TODO_FILE without completed tasks; order should not matter here
-        comm --nocheck-order -3 "$TODO_FILE" done.tmp > todo.tmp && mv todo.tmp "$TODO_FILE"
+        # remaining tasks is TODO_FILE without completed tasks
+        diff --new-line-format="" --unchanged-line-format="" "$TODO_FILE" done.tmp > todo.tmp
+        mv todo.tmp "$TODO_FILE"
         # archive completed tasks
         cat done.tmp >> "$DONE_FILE" && rm -f done.tmp
         if [ "$TODOTXT_VERBOSE" -gt 0 ]; then
