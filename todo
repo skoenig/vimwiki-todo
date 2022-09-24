@@ -311,9 +311,9 @@ case $action in
     'archive' )
         # defragment blank lines
         sed -i.bak -e '/./!d' "$TODO_FILE"
-        [ "$TODOTXT_VERBOSE" -gt 0 ] && grep -Pzo '(?m)((^- \[[✓X]\])( +.+\n*)+)' "$TODO_FILE" | tr -d '\0'
+        [ "$TODOTXT_VERBOSE" -gt 0 ] && grep -Pzo '(?m)((^- \[[✓Xx]\])( +.+\n*)+)' "$TODO_FILE" | tr -d '\0'
         # store all completed tasks and any subtasks for comparing to TODO_FILE
-        grep -Pzo '(?m)((^- \[[✓X]\])( +.+\n*)+)' "$TODO_FILE" | tr -d '\0' > done.tmp
+        grep -Pzo '(?m)((^- \[[✓Xx]\])( +.+\n*)+)' "$TODO_FILE" | tr -d '\0' > done.tmp
         # remaining tasks is TODO_FILE without completed tasks
         diff --new-line-format="" --unchanged-line-format="" "$TODO_FILE" done.tmp > todo.tmp
         mv todo.tmp "$TODO_FILE"
