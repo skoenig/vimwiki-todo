@@ -27,7 +27,7 @@ Here are some quick examples how to use `todo`:
 - List tasks grouped by context: `todo context` (you can also filter by term)
 - List tasks whose due date has past: `todo past`
 - List tasks that are due tomorrow: `todo tomorrow`
-- Edit the todo list with your default editor: `todo edit`
+- Edit the todo list with your default editor: `todo edit` (make sure the `EDITOR` env var is set)
 - Move all checked off tasks to the archive file: `todo archive`
 
 ## Installation
