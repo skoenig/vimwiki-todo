@@ -326,10 +326,10 @@ case $action in
     'context')
         context_view "$@"
         ;;
-    @(date|nodate|past|future|today|yesterday|tomorrow))
+    'date'|'nodate'|'past'|'future'|'today'|'yesterday'|'tomorrow')
         re="^(date|nodate|future|past)$"
         if [[ ! ( "$action" =~ $re ) ]]; then
-            action=$(date -d $(date -d $action +%Y-%m-%d) +%s)
+            action=$(date -d $(date -d "$action" +%Y-%m-%d) +%s)
         fi
 
         date_view "$action" "$@"
