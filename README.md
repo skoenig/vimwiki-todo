@@ -1,6 +1,6 @@
 # vimwiki-todo
 
-This here is a script based on and inspired by Gina Trapani's [todo.txt](http://todotxt.org/), reduced to only the essential commands and modified to work with [vimwiki](https://vimwiki.github.io/) todo lists in markdown mode.
+A command line tool based on and inspired by Gina Trapani's [todo.txt](http://todotxt.org/), reduced to only the essential commands and modified to work with [VimWiki](https://vimwiki.github.io/) todo lists in markdown mode.
 
 ## Why yet another todo list manager?
 Todo list managers are a dime a dozen, so why another one? It's simple: I've tried many (great for procrastinating) and haven't found another one that has the exact features I wanted. So I wrote my own.
@@ -8,13 +8,13 @@ Todo list managers are a dime a dozen, so why another one? It's simple: I've tri
 This tool is based on [todo.txt](http://todotxt.org/) simplifying some concepts for enhanced usability and task management:
 
 - **Task prioritization**: is intuitively managed by rearranging tasks within the list — placing a task higher signals its importance.
-- **Contexts**: For grouping tasks with contexts, [vimwiki tags](https://github.com/vimwiki/vimwiki/blob/69318e74c88ef7677e2496fd0a836446ceac61e8/doc/vimwiki.txt#L1575) are utilized, offering a robust tagging system.
+- **Contexts**: For grouping tasks with contexts, [VimWiki tags](https://github.com/vimwiki/vimwiki/blob/69318e74c88ef7677e2496fd0a836446ceac61e8/doc/vimwiki.txt#L1575) are utilized, offering a robust tagging system.
 - **Date and Context Filters**: Tasks can be filtered based on their due dates or associated contexts, making it easier to navigate and prioritize tasks.
 - **Archive Functionality**: Provides a method to archive completed tasks, keeping the main task list clean and focused.
 - **Recurring Tasks**: Inspired by [Graham Davies' todo.txt cron helper](https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron.py), allowing for the creation and management of tasks that occur on a regular basis.
 
-## Usage
-Vimwiki todo lists have the following format:
+## Syntax
+VimWiki todo lists have the following format:
 
 ```
 - [X] implement 'archive' command :coding:
@@ -24,8 +24,9 @@ Vimwiki todo lists have the following format:
 - [ ] commit and push t:2022-05-01
 ```
 
-In this example, the first task is completed, and is decorated with the context 'coding'. The second task has two subtask and the third tasks has a due date set with 't:2022-05-01'.
+In this example, the first task is completed, and is decorated with the context 'coding'. The second task has two sub-tasks and the third tasks has a due date set with 't:2022-05-01'.
 
+## Usage
 Here are some quick examples how to use `todo`:
 
 - Add a task: `todo add take the car to the workshop`
@@ -42,10 +43,12 @@ Have a look at all available commands with `todo help`.
 ## Installation
 Run `make install` to install `todo` into `TODO_DIR` (defaults to `~/vimwiki`).
 
-To automate the creation of recurring tasks, you will need to setup `recur.py` as a daily cron job. This is best suited for people who work with their workstation every day anyhow. For everyone else, [anacron](https://linux.die.net/man/8/anacron) might be the solution.
+## Recurring Tasks Helper
+To automate the creation of recurring tasks, you can use the helper script `recur.py` as a daily cron job. This is best suited for people whose workstation runs at the same time every day anyway. For everyone else, [anacron](https://linux.die.net/man/8/anacron) might be the solution.
 
-Run `make install-recur` to copy the script into `TODO_DIR` and create a `recur.txt` file in the same directory.
-Content of the `recur.txt` follows a format based on that used by remind:
+Run `make install-recur` to copy the script into `TODO_DIR` and create a configuration file `recur.txt` in the same directory.
+The configuration syntax follows a format inspired by [remind](https://linux.die.net/man/1/remind):
+
 ```
 {Wed} Take out trash
 {Mon Wed Fri} backup filesystem
