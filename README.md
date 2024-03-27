@@ -5,19 +5,26 @@ This here is a script based on and inspired by Gina Trapani's [todo.txt](http://
 ## Why yet another todo list manager?
 Todo list managers are a dime a dozen, so why another one? It's simple: I've tried many (great for procrastinating) and haven't found another one that has the exact features I wanted. So I wrote my own.
 
-Some concepts from [todo.txt](http://todotxt.org/) such as projects are removed for simplicity, priorities can be expressed by moving tasks higher in the todo list ;), contexts have been implemented with vimwiki tags, and there is some additional functionality such as recurring tasks (based on [Graham Davies' todo.txt cron helper](https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron.py)) and listing tasks based on their due date.
+This tool is based on [todo.txt](http://todotxt.org/) simplifying some concepts for enhanced usability and task management:
+
+- **Task prioritization**: is intuitively managed by rearranging tasks within the list — placing a task higher signals its importance.
+- **Contexts**: For grouping tasks with contexts, [vimwiki tags](https://github.com/vimwiki/vimwiki/blob/69318e74c88ef7677e2496fd0a836446ceac61e8/doc/vimwiki.txt#L1575) are utilized, offering a robust tagging system.
+- **Date and Context Filters**: Tasks can be filtered based on their due dates or associated contexts, making it easier to navigate and prioritize tasks.
+- **Archive Functionality**: Provides a method to archive completed tasks, keeping the main task list clean and focused.
+- **Recurring Tasks**: Inspired by [Graham Davies' todo.txt cron helper](https://github.com/abztrakt/ya-todo-py/blob/master/todo_cron.py), allowing for the creation and management of tasks that occur on a regular basis.
 
 ## Usage
 Vimwiki todo lists have the following format:
+
 ```
-- [X] implement 'archive' command
+- [X] implement 'archive' command :coding:
 - [ ] add some more info to the README
     - [ ] add an intro
     - [ ] add some quick examples
 - [ ] commit and push t:2022-05-01
 ```
 
-`todo` is your command line tool to interact with a todo list named `todo.md`, have a look at all commands with `todo help`.
+In this example, the first task is completed, and is decorated with the context 'coding'. The second task has two subtask and the third tasks has a due date set with 't:2022-05-01'.
 
 Here are some quick examples how to use `todo`:
 
@@ -29,6 +36,8 @@ Here are some quick examples how to use `todo`:
 - List tasks that are due tomorrow: `todo tomorrow`
 - Edit the todo list with your default editor: `todo edit` (make sure the `EDITOR` env var is set)
 - Move all checked off tasks to the archive file: `todo archive`
+
+Have a look at all available commands with `todo help`.
 
 ## Installation
 Run `make install` to install `todo` into `TODO_DIR` (defaults to `~/vimwiki`).
