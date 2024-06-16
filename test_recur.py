@@ -23,6 +23,7 @@ class TestRecur:
                 "- [ ] backup filesystem t:2021-11-29",
                 "- [ ] pay rent check every month on the 29th t:2021-11-29",
                 "- [ ] :email: birthday card every year to someone t:2021-11-29",
+                "- [x] plan summer vacation t:2024-06-01",
                 "",
             ]
         )
@@ -39,6 +40,7 @@ class TestRecur:
                 "{Mon Wed Fri} backup filesystem",
                 "{29} pay rent check every month on the 29th",
                 "{Nov 29} :email: birthday card every year to someone",
+                "{Jun 01} plan summer vacation",
                 "",
             ]
         )
@@ -87,11 +89,13 @@ class TestRecur:
             "{Mon Wed Fri}": ["backup filesystem"],
             "{29}": ["pay rent check every month on the 29th"],
             "{Nov 29}": [":email: birthday card every year to someone"],
+            "{Jun 01}": ["plan summer vacation"],
         }
 
     def test_task_exists(self, todo_file):
         assert not recur.task_exists("backup filesystem", "2022-01-01")
         assert recur.task_exists("backup filesystem", "2021-11-29")
+        assert recur.task_exists("plan summer vacation", "2024-06-01")
 
     def test_add_task(self, todo_file):
         recur.add_task("take out the trash", "2022-01-01")
