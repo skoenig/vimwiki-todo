@@ -323,7 +323,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter
     )
-    parser.add_argument("-v", "--verbose", help="increase verbosity", action="count")
+    parser.add_argument(
+        "-v", "--verbose", help="increase verbosity", action="count", default=0
+    )
     parser.add_argument("-d", "--todo_dir", help="Specify TODO_DIR from command line")
     args = parser.parse_args()
 
