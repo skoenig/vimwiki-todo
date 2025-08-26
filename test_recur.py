@@ -122,3 +122,41 @@ class TestRecur:
             todos = fh.readlines()
 
         assert todos[0] == time.strftime("- [ ] pick up milk t:%F\n", now)
+
+    def test_month_day(self):
+        # Test cases for month_day function
+        today = time.strptime("2024 01 15", "%Y %m %d")
+        assert recur.month_day("Jan 15", today) == (True, True)
+        assert recur.month_day("Jan 16", today) == (True, False)
+        assert recur.month_day("Feb 29", today) == (True, False)  # Non-leap year
+        today = time.strptime("2024 02 29", "%Y %m %d")
+        assert recur.month_day("Feb 29", today) == (True, True)  # Leap year
+        assert recur.month_day("invalid date", today) == (False, False)
+
+        # Test repeat feature
+        today = time.strptime("2024 01 15", "%Y %m %d")
+        assert recur.month_day("Jan 10", today, rep=5) == (True, False)
+        assert recur.month_day("Jan 11", today, rep=5) == (True, True)
+
+        # Test warning feature
+        today = time.strptime("2024 01 20", "%Y %m %d")
+        assert recur.month_day("Jan 24", today, warn=5) == (True, True)
+        assert recur.month_day("Jan 25", today, warn=5) == (True, False)
+
+    def test_month_day_year(self):
+        # Test cases for month_day_year function
+        today = time.strptime("2024 01 15", "%Y %m %d")
+        assert recur.month_day_year("Jan 15 2024", today) == (True, True)
+        assert recur.month_day_year("Jan 16 2024", today) == (True, False)
+        assert recur.month_day_year("Feb 29 2024", today) == (True, False)
+        assert recur.month_day_year("invalid date", today) == (False, False)
+
+        # Test repeat feature
+        today = time.strptime("2024 01 15", "%Y %m %d")
+        assert recur.month_day_year("Jan 10 2024", today, rep=5) == (True, False)
+        assert recur.month_day_year("Jan 11 2024", today, rep=5) == (True, True)
+
+        # Test warning feature
+        today = time.strptime("2024 01 20", "%Y %m %d")
+        assert recur.month_day_year("Jan 24 2024", today, warn=5) == (True, True)
+        assert recur.month_day_year("Jan 25 2024", today, warn=5) == (True, False)

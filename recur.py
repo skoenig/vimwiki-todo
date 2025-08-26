@@ -7,6 +7,7 @@ import sys
 import time
 import logging
 import argparse
+import datetime
 
 TODO_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -75,19 +76,23 @@ def month_day(rem, today, warn=False, rep=False):
 
     try:
         event = time.strptime(rem, "%b %d")
-        # new code to handle warnings 2007/07/22
+        event_date = datetime.date(today.tm_year, event.tm_mon, event.tm_mday)
+        today_date = datetime.date(today.tm_year, today.tm_mon, today.tm_mday)
+
         if warn:
             for i in range(1, warn):
-                if event.tm_mon == today.tm_mon and event.tm_mday - i == today.tm_mday:
-                    log.debug('parsed %s as "month_day"' % rem)
+                future_date = event_date - datetime.timedelta(days=i)
+                if future_date == today_date:
+                    log.debug('parsed %s as "month_day" with warnings' % rem)
                     return True, True
-        # new code to handle repeats 2007/07/22
+
         if rep:
             for i in range(1, rep):
-                if event.tm_mon == today.tm_mon and event.tm_mday + i == today.tm_mday:
-                    log.debug('parsed %s as "single_do_w" with repeats' % rem)
+                future_date = event_date + datetime.timedelta(days=i)
+                if future_date == today_date:
+                    log.debug('parsed %s as "month_day" with repeats' % rem)
                     return True, True
-        # end new code
+
         if event.tm_mon == today.tm_mon and event.tm_mday == today.tm_mday:
             return True, True
         else:
@@ -101,6 +106,23 @@ def month_day_year(rem, today, warn=False, rep=False):
 
     try:
         event = time.strptime(rem, "%b %d %Y")
+        event_date = datetime.date(event.tm_year, event.tm_mon, event.tm_mday)
+        today_date = datetime.date(today.tm_year, today.tm_mon, today.tm_mday)
+
+        if warn:
+            for i in range(1, warn):
+                future_date = event_date - datetime.timedelta(days=i)
+                if future_date == today_date:
+                    log.debug('parsed %s as "month_day_year" with warnings' % rem)
+                    return True, True
+
+        if rep:
+            for i in range(1, rep):
+                future_date = event_date + datetime.timedelta(days=i)
+                if future_date == today_date:
+                    log.debug('parsed %s as "month_day_year" with repeats' % rem)
+                    return True, True
+
         if (
             event.tm_year == today.tm_year
             and event.tm_mon == today.tm_mon
