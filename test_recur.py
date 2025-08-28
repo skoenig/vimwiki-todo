@@ -143,6 +143,18 @@ class TestRecur:
         assert recur.month_day("Jan 24", today, warn=5) == (True, True)
         assert recur.month_day("Jan 25", today, warn=5) == (True, False)
 
+        # Edge case: Event is Jan 1, today is Dec 31 of previous year, warn=3
+        today = time.strptime("2023 12 31", "%Y %m %d")
+        assert recur.month_day("Jan 01", today, warn=3) == (True, True)
+
+        # Edge case: Event is Dec 31, today is Jan 1 of next year, repeat=3
+        today = time.strptime("2025 01 01", "%Y %m %d")
+        assert recur.month_day("Dec 31", today, rep=3) == (True, True)
+
+        # Edge case: Event is Dec 28, today is Jan 1 of next year, repeat=3
+        today = time.strptime("2025 01 01", "%Y %m %d")
+        assert recur.month_day("Dec 28", today, rep=3) == (True, False)
+
     def test_month_day_year(self):
         # Test cases for month_day_year function
         today = time.strptime("2024 01 15", "%Y %m %d")
@@ -160,3 +172,15 @@ class TestRecur:
         today = time.strptime("2024 01 20", "%Y %m %d")
         assert recur.month_day_year("Jan 24 2024", today, warn=5) == (True, True)
         assert recur.month_day_year("Jan 25 2024", today, warn=5) == (True, False)
+
+        # Edge case: Event is Jan 1, today is Dec 31 of previous year, warn=3
+        today = time.strptime("2023 12 31", "%Y %m %d")
+        assert recur.month_day_year("Jan 01 2024", today, warn=3) == (True, True)
+
+        # Edge case: Event is Dec 31, today is Jan 1 of next year, repeat=3
+        today = time.strptime("2025 01 01", "%Y %m %d")
+        assert recur.month_day_year("Dec 31 2024", today, rep=3) == (True, True)
+
+        # Edge case: Event is Dec 28, today is Jan 1 of next year, repeat=3
+        today = time.strptime("2025 01 01", "%Y %m %d")
+        assert recur.month_day_year("Dec 28 2024", today, rep=3) == (True, False)

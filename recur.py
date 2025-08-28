@@ -46,8 +46,8 @@ def single_day(rem, today):
     """Single Day - recur every month on this date eg. {22}"""
 
     if rem.isdigit():
-        event = time.strptime(rem, "%d")
-        if event.tm_mday == today.tm_mday:
+        event = int(rem)
+        if event == today.tm_mday:
             log.debug('parsed %s as "single_day"' % rem)
             return True, True
         else:
@@ -73,23 +73,23 @@ def single_do_w(rem, today):
 
 def month_day(rem, today, warn=False, rep=False):
     """Month Day - add on this day every year eg. {Nov 22}"""
-
     try:
-        event = time.strptime(rem, "%b %d")
-        event_date = datetime.date(today.tm_year, event.tm_mon, event.tm_mday)
+        event = time.strptime(rem + " " + str(today.tm_year), "%b %d %Y")
         today_date = datetime.date(today.tm_year, today.tm_mon, today.tm_mday)
 
         if warn:
             for i in range(1, warn):
-                future_date = event_date - datetime.timedelta(days=i)
-                if future_date == today_date:
+                future_date = today_date + datetime.timedelta(days=i)
+                event_date = datetime.date(future_date.year, event.tm_mon, event.tm_mday)
+                if event_date == future_date:
                     log.debug('parsed %s as "month_day" with warnings' % rem)
                     return True, True
 
         if rep:
             for i in range(1, rep):
-                future_date = event_date + datetime.timedelta(days=i)
-                if future_date == today_date:
+                past_date = today_date - datetime.timedelta(days=i)
+                event_date = datetime.date(past_date.year, event.tm_mon, event.tm_mday)
+                if event_date == past_date:
                     log.debug('parsed %s as "month_day" with repeats' % rem)
                     return True, True
 
@@ -118,16 +118,12 @@ def month_day_year(rem, today, warn=False, rep=False):
 
         if rep:
             for i in range(1, rep):
-                future_date = event_date + datetime.timedelta(days=i)
-                if future_date == today_date:
+                past_date = event_date + datetime.timedelta(days=i)
+                if past_date == today_date:
                     log.debug('parsed %s as "month_day_year" with repeats' % rem)
                     return True, True
 
-        if (
-            event.tm_year == today.tm_year
-            and event.tm_mon == today.tm_mon
-            and event.tm_mday == today.tm_mday
-        ):
+        if event_date == today_date:
             log.debug('parsed %s as "month_day_year"' % rem)
             return True, True
         else:
