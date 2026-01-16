@@ -74,6 +74,55 @@ class TestRecur:
         assert num_days == '5'
         assert day == 'Nov 27'
 
+    def test_single_do_w(self):
+        # Today is a Monday
+        day = time.strptime('2024 01 15', '%Y %m %d')
+
+        is_rem, is_today = recur.single_do_w('Mon', day)
+        assert is_rem
+        assert is_today
+
+        is_rem, is_today = recur.single_do_w('Tue', day)
+        assert is_rem
+        assert not is_today
+
+        is_rem, is_today = recur.single_do_w('x', day)
+        assert not is_rem
+        assert not is_today
+
+    def test_multi_do_w(self):
+        # Today is a Monday
+        day = time.strptime('2024 01 15', '%Y %m %d')
+
+        is_rem, is_today = recur.multi_do_w('Mon Wed Fri', day)
+        assert is_rem
+        assert is_today
+
+        is_rem, is_today = recur.multi_do_w('Tue Thu Sat', day)
+        assert is_rem
+        assert not is_today
+
+        # If 'Mon' is first string that matches, it returns True, True
+        # even if 'Invalid' follows. This test reflects that behavior.
+        is_rem, is_today = recur.multi_do_w('Mon Invalid', day)
+        assert is_rem
+        assert is_today
+
+    def test_multi_day(self):
+        # Today is the 15th
+        day = time.strptime('2024 01 15', '%Y %m %d')
+        is_rem, is_today = recur.multi_day('1 15 30', day)
+        assert is_rem
+        assert is_today
+        is_rem, is_today = recur.multi_day('2 16 25', day)
+        assert is_rem
+        assert not is_today
+
+        # Same like for test_multi_do_w: If '15' is first and matches, it returns True, True.
+        is_rem, is_today = recur.multi_day('15 x', day)
+        assert is_rem
+        assert is_today
+
     def test_parse_rem(self):
         day = time.strptime('2022 01 15', '%Y %m %d')
 
@@ -81,6 +130,61 @@ class TestRecur:
         assert recur.parse_rem('Sat', day)
         assert recur.parse_rem('Jan 15 2022', day)
         assert recur.parse_rem('31 22 11 15 33', day)
+
+        # Test cases for single_do_w via parse_rem
+        day_mon = time.strptime('2024 01 15', '%Y %m %d')  # Monday
+        assert recur.parse_rem('Mon', day_mon)
+        assert not recur.parse_rem('Tue', day_mon)
+
+        # Test cases for multi_do_w via parse_rem
+        assert recur.parse_rem('Mon Wed Fri', day_mon)
+        assert not recur.parse_rem('Tue Thu Sat', day_mon)
+        # Test specific behavior where a valid match causes early return
+        assert recur.parse_rem('Mon Invalid', day_mon)
+        # Test cases for multi_day via parse_rem
+        day_15 = time.strptime('2024 01 15', '%Y %m %d')  # 15th day
+        assert recur.parse_rem('1 15 30', day_15)
+        assert not recur.parse_rem('2 16 25', day_15)
+        # Test specific behavior where a valid match causes early return
+        assert recur.parse_rem('15 x', day_15)
+        # Test cases for month_day with warning via parse_rem
+        day_jan_20 = time.strptime('2024 01 20', '%Y %m %d')
+        assert recur.parse_rem(
+            'Jan 24 +5', day_jan_20
+        )  # Event Jan 24, today Jan 20 (4 days before), +5 makes it true
+        assert not recur.parse_rem(
+            'Jan 26 +5', day_jan_20
+        )  # Event Jan 26, today Jan 20 (6 days before), +5 makes it false
+
+        # Test cases for month_day with repeat via parse_rem
+        day_jan_15 = time.strptime('2024 01 15', '%Y %m %d')
+        assert recur.parse_rem(
+            'Jan 11 *5', day_jan_15
+        )  # Event Jan 11, today Jan 15 (4 days after), *5 makes it true
+        assert not recur.parse_rem(
+            'Jan 10 *5', day_jan_15
+        )  # Event Jan 10, today Jan 15 (5 days after), *5 makes it false
+
+        # Test cases for month_day_year with warning via parse_rem
+        day_dec_30 = time.strptime('2023 12 30', '%Y %m %d')
+        assert recur.parse_rem(
+            'Jan 01 2024 +3', day_dec_30
+        )  # Event Jan 1 2024, today Dec 30 2023 (2 days before), +3 makes it true
+        assert not recur.parse_rem(
+            'Jan 01 2024 +1', day_dec_30
+        )  # Event Jan 1 2024, today Dec 30 2023 (2 days before), +1 makes it false
+
+        # Test cases for month_day_year with repeat via parse_rem
+        day_jan_02 = time.strptime('2025 01 02', '%Y %m %d')
+        assert recur.parse_rem(
+            'Dec 31 2024 *3', day_jan_02
+        )  # Event Dec 31 2024, today Jan 2 2025 (2 days after), *3 makes it true
+        assert not recur.parse_rem(
+            'Dec 30 2024 *3', day_jan_02
+        )  # Event Dec 30 2024, today Jan 2 2025 (3 days after), *3 makes it false
+
+        # Invalid format
+        assert not recur.parse_rem('invalid format', day)
 
     def test_get_dict(self, recur_config_file):
         assert recur.get_dict(recur.RECUR_FILE) == {
