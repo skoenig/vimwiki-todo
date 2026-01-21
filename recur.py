@@ -17,6 +17,9 @@ log = logging.getLogger(__name__)
 TASK_RE = re.compile(
     r'- \[.]\s*(?P<priority>([A-Z]))? (?P<task_head>.* )t:(?P<date>[^ ]*)(?P<task_tail>.*)'
 )
+REMINDER_RE = re.compile(r'{([^}]+)}')
+WARNING_RE = re.compile(r' \+(\d+)$')
+REPEAT_RE = re.compile(r' \*(\d+)$')
 DESCRIPTION = """
 Adds tasks from recur.txt that match today's date to todo file
 
@@ -155,25 +158,23 @@ def month_day_year(rem, today, warn=False, rep=False):
         return False, False
 
 
-def has_warning(rem, today):
+def has_warning(rem):
     """Month Day Warning - add Warning days before the date eg. {Nov 22 +5}"""
 
-    re_rem = re.compile(r' \+(\d+)$')
-    match = re.search(re_rem, rem)
+    match = re.search(WARNING_RE, rem)
     if match:
-        rem = re.sub(re_rem, '', rem)
+        rem = re.sub(WARNING_RE, '', rem)
         return match.group(1), rem
     else:
         return False, False
 
 
-def has_repeat(rem, today):
+def has_repeat(rem):
     """Month Day Repeat - add for Repeat days after the date eg. {Nov 22 *5}"""
 
-    re_rem = re.compile(r' \*(\d+)$')
-    match = re.search(re_rem, rem)
+    match = re.search(REPEAT_RE, rem)
     if match:
-        rem = re.sub(re_rem, '', rem)
+        rem = re.sub(REPEAT_RE, '', rem)
         return match.group(1), rem
     else:
         return False, False
@@ -227,12 +228,12 @@ def parse_rem(rem, today):
 
     log.debug('try to parse "%s"' % rem)
 
-    warnDays, newrem = has_warning(rem, today)
+    warnDays, newrem = has_warning(rem)
     if warnDays:
         warnDays = int(warnDays)
         rem = newrem
 
-    repeatDays, newrem = has_repeat(rem, today)
+    repeatDays, newrem = has_repeat(rem)
     if repeatDays:
         repeatDays = int(repeatDays)
         rem = newrem
@@ -282,8 +283,8 @@ def add_today_tasks(config_file):
     rem = get_dict(config_file)
     for k, v in list(rem.items()):
         log.info('processing item [%s] = %s' % (k, v))
-        re_date = re.compile(r'{([^}]+)}')
-        date = re.search(re_date, k)
+
+        date = re.search(REMINDER_RE, k)
         if date:
             isToday = parse_rem(
                 date.group(1), today

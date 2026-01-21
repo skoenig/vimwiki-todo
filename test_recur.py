@@ -61,15 +61,15 @@ class TestRecur:
         assert not is_today
 
     def test_has_warning(self):
-        num_warning_days, day = recur.has_warning('Mar 01 +5', True)
+        num_warning_days, day = recur.has_warning('Mar 01 +5')
         assert num_warning_days.isdigit()
         assert day == 'Mar 01'
 
-        num_warning_days, day = recur.has_warning('Mar 01 +x', True)
+        num_warning_days, day = recur.has_warning('Mar 01 +x')
         assert not num_warning_days
 
     def test_has_repeat(self):
-        num_days, day = recur.has_repeat('Nov 27 *5', True)
+        num_days, day = recur.has_repeat('Nov 27 *5')
         assert num_days.isdigit()
         assert num_days == '5'
         assert day == 'Nov 27'
