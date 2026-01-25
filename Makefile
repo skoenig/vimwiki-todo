@@ -1,7 +1,5 @@
 SHELL = /bin/sh
-
 INSTALL = /usr/bin/install
-INSTALL_PROGRAM = $(INSTALL)
 
 # The directory to install the scripts in.
 ifdef TODO_DIR
@@ -20,7 +18,7 @@ installdirs:
 	@if [ ! -d $(bindir) ]; then mkdir $(bindir); fi
 
 install: installdirs
-	$(INSTALL_PROGRAM) todo $(DESTDIR)$(tododir)/todo && \
+	$(INSTALL) todo $(DESTDIR)$(tododir)/todo && \
 		ln -sf $(DESTDIR)$(tododir)/todo $(DESTDIR)$(bindir)/todo
 	@echo "todo" >> $(DESTDIR)$(tododir)/.gitignore
 
@@ -28,7 +26,7 @@ uninstall:
 	rm -f $(DESTDIR)$(tododir)/todo $(DESTDIR)$(bindir)/todo
 
 install-recur: installdirs
-	$(INSTALL_PROGRAM) recur.py $(DESTDIR)$(tododir)/recur.py && \
+	$(INSTALL) recur.py $(DESTDIR)$(tododir)/recur.py && \
 		sudo ln -sf $(DESTDIR)$(tododir)/recur.py /etc/cron.daily/add_recurring_todos
 	@echo "recur.py" >> $(DESTDIR)$(tododir)/.gitignore
 
