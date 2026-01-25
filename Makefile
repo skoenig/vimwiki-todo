@@ -37,5 +37,9 @@ uninstall-recur:
 
 .PHONY: test
 test:
-	python -m pip install -e .[tests]
-	python -m pytest
+	@if [ ! -d .venv ]; then \
+		echo "Creating virtual environment..."; \
+		python3 -m venv .venv; \
+		.venv/bin/pip install -e .[tests]; \
+	fi
+	.venv/bin/python -m pytest -v
