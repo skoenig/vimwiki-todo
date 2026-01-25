@@ -74,37 +74,37 @@ class TestRecur:
         assert num_days == '5'
         assert day == 'Nov 27'
 
-    def test_single_do_w(self):
+    def test_single_weekday(self):
         # Today is a Monday
         day = time.strptime('2024 01 15', '%Y %m %d')
 
-        is_rem, is_today = recur.single_do_w('Mon', day)
+        is_rem, is_today = recur.single_weekday('Mon', day)
         assert is_rem
         assert is_today
 
-        is_rem, is_today = recur.single_do_w('Tue', day)
+        is_rem, is_today = recur.single_weekday('Tue', day)
         assert is_rem
         assert not is_today
 
-        is_rem, is_today = recur.single_do_w('x', day)
+        is_rem, is_today = recur.single_weekday('x', day)
         assert not is_rem
         assert not is_today
 
-    def test_multi_do_w(self):
+    def test_multi_weekday(self):
         # Today is a Monday
         day = time.strptime('2024 01 15', '%Y %m %d')
 
-        is_rem, is_today = recur.multi_do_w('Mon Wed Fri', day)
+        is_rem, is_today = recur.multi_weekday('Mon Wed Fri', day)
         assert is_rem
         assert is_today
 
-        is_rem, is_today = recur.multi_do_w('Tue Thu Sat', day)
+        is_rem, is_today = recur.multi_weekday('Tue Thu Sat', day)
         assert is_rem
         assert not is_today
 
         # If 'Mon' is first string that matches, it returns True, True
         # even if 'Invalid' follows. This test reflects that behavior.
-        is_rem, is_today = recur.multi_do_w('Mon Invalid', day)
+        is_rem, is_today = recur.multi_weekday('Mon Invalid', day)
         assert is_rem
         assert is_today
 
@@ -118,7 +118,7 @@ class TestRecur:
         assert is_rem
         assert not is_today
 
-        # Same like for test_multi_do_w: If '15' is first and matches, it returns True, True.
+        # Same like for test_multi_weekday: If '15' is first and matches, it returns True, True.
         is_rem, is_today = recur.multi_day('15 x', day)
         assert is_rem
         assert is_today
@@ -131,12 +131,12 @@ class TestRecur:
         assert recur.parse_rem('Jan 15 2022', day)
         assert recur.parse_rem('31 22 11 15 33', day)
 
-        # Test cases for single_do_w via parse_rem
+        # Test cases for single_weekday via parse_rem
         day_mon = time.strptime('2024 01 15', '%Y %m %d')  # Monday
         assert recur.parse_rem('Mon', day_mon)
         assert not recur.parse_rem('Tue', day_mon)
 
-        # Test cases for multi_do_w via parse_rem
+        # Test cases for multi_weekday via parse_rem
         assert recur.parse_rem('Mon Wed Fri', day_mon)
         assert not recur.parse_rem('Tue Thu Sat', day_mon)
         # Test specific behavior where a valid match causes early return
@@ -246,37 +246,37 @@ class TestRecur:
 
         # Test repeat feature
         today = time.strptime('2024 01 15', '%Y %m %d')
-        assert recur.month_day('Jan 10', today, rep=5) == (
+        assert recur.month_day('Jan 10', today, repeat_days=5) == (
             True,
             False,
         )
-        assert recur.month_day('Jan 11', today, rep=5) == (True, True)
+        assert recur.month_day('Jan 11', today, repeat_days=5) == (True, True)
 
         # Test warning feature
         today = time.strptime('2024 01 20', '%Y %m %d')
-        assert recur.month_day('Jan 24', today, warn=5) == (
+        assert recur.month_day('Jan 24', today, warning_days=5) == (
             True,
             True,
         )
-        assert recur.month_day('Jan 25', today, warn=5) == (
+        assert recur.month_day('Jan 25', today, warning_days=5) == (
             True,
             False,
         )
 
         # Edge case: Event is Jan 1, today is Dec 31 of previous year, warn=3
         today = time.strptime('2023 12 31', '%Y %m %d')
-        assert recur.month_day('Jan 01', today, warn=3) == (
+        assert recur.month_day('Jan 01', today, warning_days=3) == (
             True,
             True,
         )
 
         # Edge case: Event is Dec 31, today is Jan 1 of next year, repeat=3
         today = time.strptime('2025 01 01', '%Y %m %d')
-        assert recur.month_day('Dec 31', today, rep=3) == (True, True)
+        assert recur.month_day('Dec 31', today, repeat_days=3) == (True, True)
 
         # Edge case: Event is Dec 28, today is Jan 1 of next year, repeat=3
         today = time.strptime('2025 01 01', '%Y %m %d')
-        assert recur.month_day('Dec 28', today, rep=3) == (
+        assert recur.month_day('Dec 28', today, repeat_days=3) == (
             True,
             False,
         )
@@ -303,43 +303,43 @@ class TestRecur:
 
         # Test repeat feature
         today = time.strptime('2024 01 15', '%Y %m %d')
-        assert recur.month_day_year('Jan 10 2024', today, rep=5) == (
+        assert recur.month_day_year('Jan 10 2024', today, repeat_days=5) == (
             True,
             False,
         )
-        assert recur.month_day_year('Jan 11 2024', today, rep=5) == (
+        assert recur.month_day_year('Jan 11 2024', today, repeat_days=5) == (
             True,
             True,
         )
 
         # Test warning feature
         today = time.strptime('2024 01 20', '%Y %m %d')
-        assert recur.month_day_year('Jan 24 2024', today, warn=5) == (
+        assert recur.month_day_year('Jan 24 2024', today, warning_days=5) == (
             True,
             True,
         )
-        assert recur.month_day_year('Jan 25 2024', today, warn=5) == (
+        assert recur.month_day_year('Jan 25 2024', today, warning_days=5) == (
             True,
             False,
         )
 
         # Edge case: Event is Jan 1, today is Dec 31 of previous year, warn=3
         today = time.strptime('2023 12 31', '%Y %m %d')
-        assert recur.month_day_year('Jan 01 2024', today, warn=3) == (
+        assert recur.month_day_year('Jan 01 2024', today, warning_days=3) == (
             True,
             True,
         )
 
         # Edge case: Event is Dec 31, today is Jan 1 of next year, repeat=3
         today = time.strptime('2025 01 01', '%Y %m %d')
-        assert recur.month_day_year('Dec 31 2024', today, rep=3) == (
+        assert recur.month_day_year('Dec 31 2024', today, repeat_days=3) == (
             True,
             True,
         )
 
         # Edge case: Event is Dec 28, today is Jan 1 of next year, repeat=3
         today = time.strptime('2025 01 01', '%Y %m %d')
-        assert recur.month_day_year('Dec 28 2024', today, rep=3) == (
+        assert recur.month_day_year('Dec 28 2024', today, repeat_days=3) == (
             True,
             False,
         )

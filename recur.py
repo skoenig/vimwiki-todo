@@ -37,21 +37,22 @@ Date format based on that used by remind:
 
 
 def set_dirs(todo_dir):
+    """Set global paths for recurrence and todo files."""
     global RECUR_FILE, TODO_FILE
 
-    RECUR_FILE = todo_dir + os.path.sep + 'recur.txt'
-    TODO_FILE = todo_dir + os.path.sep + 'todo.md'
-    log.info('using file for recurring records: %s' % RECUR_FILE)
+    RECUR_FILE = os.path.join(todo_dir, 'recur.txt')
+    TODO_FILE = os.path.join(todo_dir, 'todo.md')
+    log.info(f'Using file for recurring records: {RECUR_FILE}')
     return True
 
 
-def single_day(rem, today):
-    """Single Day - recur every month on this date eg. {22}"""
+def single_day(reminder_str, today):
+    """Check if a single day reminder matches today's time struct. Eg. {22}"""
 
-    if rem.isdigit():
-        event = int(rem)
-        if event == today.tm_mday:
-            log.debug('parsed %s as "single_day"' % rem)
+    if reminder_str.isdigit():
+        reminder_day = int(reminder_str)
+        if reminder_day == today.tm_mday:
+            log.debug(f'Parsed "{reminder_str}" as "single_day"')
             return True, True
         else:
             return True, False
@@ -59,14 +60,14 @@ def single_day(rem, today):
         return False, False
 
 
-def single_do_w(rem, today):
-    """Single DayOfWeek - recur if day matches eg. {Mon}"""
+def single_weekday(reminder_str, today):
+    """Check if a single day of week reminder matches today's time struct. Eg. {Mon}"""
 
     try:
-        event = time.strptime(rem, '%a')
-        log.debug(event)
-        if event.tm_wday == today.tm_wday:
-            log.debug('parsed %s as "single_do_w"' % rem)
+        reminder_weekday = time.strptime(reminder_str, '%a')
+        log.debug(reminder_weekday)
+        if reminder_weekday.tm_wday == today.tm_wday:
+            log.debug(f'Parsed "{reminder_str}" as "single_weekday"')
             return True, True
         else:
             return True, False
@@ -74,44 +75,50 @@ def single_do_w(rem, today):
         return False, False
 
 
-def month_day(rem, today, warn=False, rep=False):
-    """Month Day - add on this day every year eg. {Nov 22}"""
+def month_day(reminder_str, today, warning_days=0, repeat_days=0):
+    """Check if a month-day reminder matches today's time structs, with optional warning or repeat. Eg. {Nov 22}"""
     try:
-        event = time.strptime(
-            rem + ' ' + str(today.tm_year),
+        reminder_time = time.strptime(
+            f'{reminder_str} {today.tm_year}',
             '%b %d %Y',
         )
-        today_date = datetime.date(
+        current_date = datetime.date(
             today.tm_year,
             today.tm_mon,
             today.tm_mday,
         )
 
-        if warn:
-            for i in range(1, warn):
-                future_date = today_date + datetime.timedelta(days=i)
+        if warning_days:
+            # Check if the event date falls within the warning period (days before)
+            for i in range(1, warning_days):
+                future_date = current_date + datetime.timedelta(days=i)
                 event_date = datetime.date(
                     future_date.year,
-                    event.tm_mon,
-                    event.tm_mday,
+                    reminder_time.tm_mon,
+                    reminder_time.tm_mday,
                 )
                 if event_date == future_date:
-                    log.debug('parsed %s as "month_day" with warnings' % rem)
+                    log.debug(f'Parsed "{reminder_str}" as "month_day" with warnings')
                     return True, True
 
-        if rep:
-            for i in range(1, rep):
-                past_date = today_date - datetime.timedelta(days=i)
+        if repeat_days:
+            # Check if the event date falls within the repeat period (days after)
+            for i in range(1, repeat_days):
+                past_date = current_date - datetime.timedelta(days=i)
                 event_date = datetime.date(
                     past_date.year,
-                    event.tm_mon,
-                    event.tm_mday,
+                    reminder_time.tm_mon,
+                    reminder_time.tm_mday,
                 )
                 if event_date == past_date:
-                    log.debug('parsed %s as "month_day" with repeats' % rem)
+                    log.debug(f'Parsed "{reminder_str}" as "month_day" with repeats')
                     return True, True
 
-        if event.tm_mon == today.tm_mon and event.tm_mday == today.tm_mday:
+        # Check if the event month and day match today's month and day
+        if (
+            reminder_time.tm_mon == today.tm_mon
+            and reminder_time.tm_mday == today.tm_mday
+        ):
             return True, True
         else:
             return True, False
@@ -119,38 +126,42 @@ def month_day(rem, today, warn=False, rep=False):
         return False, False
 
 
-def month_day_year(rem, today, warn=False, rep=False):
-    """Month Day Year - single event that doesn't recur eg. {Nov 22 2007}"""
+def month_day_year(reminder_str, today, warning_days=0, repeat_days=0):
+    """Check if a specific month-day-year event matches today's time struct, with optional warning or repeat. Eg. {Nov 22 2007}"""
 
     try:
-        event = time.strptime(rem, '%b %d %Y')
-        event_date = datetime.date(
-            event.tm_year,
-            event.tm_mon,
-            event.tm_mday,
+        reminder_time = time.strptime(reminder_str, '%b %d %Y')
+        reminder_date = datetime.date(
+            reminder_time.tm_year,
+            reminder_time.tm_mon,
+            reminder_time.tm_mday,
         )
-        today_date = datetime.date(
+        current_date = datetime.date(
             today.tm_year,
             today.tm_mon,
             today.tm_mday,
         )
 
-        if warn:
-            for i in range(1, warn):
-                future_date = event_date - datetime.timedelta(days=i)
-                if future_date == today_date:
-                    log.debug('parsed %s as "month_day_year" with warnings' % rem)
+        if warning_days:
+            for i in range(1, warning_days):
+                future_date = reminder_date - datetime.timedelta(days=i)
+                if future_date == current_date:
+                    log.debug(
+                        f'Parsed "{reminder_str}" as "month_day_year" with warnings'
+                    )
                     return True, True
 
-        if rep:
-            for i in range(1, rep):
-                past_date = event_date + datetime.timedelta(days=i)
-                if past_date == today_date:
-                    log.debug('parsed %s as "month_day_year" with repeats' % rem)
+        if repeat_days:
+            for i in range(1, repeat_days):
+                past_date = reminder_date + datetime.timedelta(days=i)
+                if past_date == current_date:
+                    log.debug(
+                        f'Parsed "{reminder_str}" as "month_day_year" with repeats'
+                    )
                     return True, True
 
-        if event_date == today_date:
-            log.debug('parsed %s as "month_day_year"' % rem)
+        if reminder_date == current_date:
+            log.debug(f'Parsed "{reminder_str}" as "month_day_year"')
             return True, True
         else:
             return True, False
@@ -158,190 +169,189 @@ def month_day_year(rem, today, warn=False, rep=False):
         return False, False
 
 
-def has_warning(rem):
-    """Month Day Warning - add Warning days before the date eg. {Nov 22 +5}"""
+def has_warning(reminder_str):
+    """Extract warning days from a reminder. Eg. {Nov 22 +5}"""
 
-    match = re.search(WARNING_RE, rem)
+    match = re.search(WARNING_RE, reminder_str)
     if match:
-        rem = re.sub(WARNING_RE, '', rem)
-        return match.group(1), rem
+        remainder_reminder_str = re.sub(WARNING_RE, '', reminder_str)
+        return match.group(1), remainder_reminder_str
     else:
         return False, False
 
 
-def has_repeat(rem):
-    """Month Day Repeat - add for Repeat days after the date eg. {Nov 22 *5}"""
+def has_repeat(reminder_str):
+    """Extract repeat days from a reminder. Eg. {Nov 22 *5}"""
 
-    match = re.search(REPEAT_RE, rem)
+    match = re.search(REPEAT_RE, reminder_str)
     if match:
-        rem = re.sub(REPEAT_RE, '', rem)
-        return match.group(1), rem
+        remainder_reminder_str = re.sub(REPEAT_RE, '', reminder_str)
+        return match.group(1), remainder_reminder_str
     else:
         return False, False
 
 
-def multi_do_w(rem, today):
-    """Multiple DayOfWeek - recur each day that matches
-    eg. {Mon Wed} or {Mon Tue Wed} or {Mon Tue Wed Thu Fri}"""
+def multi_weekday(reminder_str, today):
+    """Check if any day of week in a multi-day reminder  matches today's time struct. Eg. {Mon Wed Fri}"""
 
-    words = rem.split()
-    for day in words:
-        type, now = single_do_w(day, today)
-        if not type:
-            # If one fails - they all fail
+    days = reminder_str.split()
+    for day in days:
+        is_parsed_ok, is_today_match = single_weekday(day, today)
+        if not is_parsed_ok:
+            # If any part fails to parse, the whole multi-day string is considered invalid.
             return False, False
-        if now:
-            log.debug('parsed %s as "multi_do_w"' % rem)
+        if is_today_match:
+            log.debug(f'Parsed "{reminder_str}" as "multi_weekday"')
             return True, True
     return True, False
 
 
-def multi_day(rem, today):
-    """Multiple Days - recur each day that matches eg. {1 14 28}"""
+def multi_day(reminder_str, today):
+    """Check if any day number in a multi-day reminder  matches today. Eg. {1 14 28}"""
 
-    words = rem.split()
-    for day in words:
-        type, now = single_day(day, today)
-        if not type:
-            # If one fails - they all fail
+    days = reminder_str.split()
+    for day in days:
+        is_parsed_ok, is_today_match = single_day(day, today)
+        if not is_parsed_ok:
+            # If any part fails to parse, the whole multi-day string is considered invalid.
             return False, False
-        if now:
-            log.debug('parsed %s as "multi_day"' % rem)
+        if is_today_match:
+            log.debug(f'Parsed "{reminder_str}" as "multi_day"')
             return True, True
     return True, False
 
 
-def parse_rem(rem, today):
-    """parses REM style date strings - returns True if event is today"""
+def parse_rem(reminder_str, today):
+    """Parses REM style date strings - returns True if event is today."""
 
-    # 1st DayOfWeek after date
-    # {Mon 15}
+    log.debug(f'Trying to parse "{reminder_str}"')
 
-    # xth DayOfWeek after date
-    # {Mon 15}
+    warning_days = 0
+    repeat_days = 0
 
-    # OMIT
+    # Extract warning days if present
+    warning_days_str, processed_reminder_str = has_warning(reminder_str)
+    if warning_days_str:
+        warning_days = int(warning_days_str)
+        reminder_str = processed_reminder_str
 
-    # ### Sub day --- no support planned
-    # Times -- AT 5:00PM
-    # {AT 5:00PM}
+    # Extract repeat days if present
+    repeat_days_str, processed_reminder_str = has_repeat(reminder_str)
+    if repeat_days_str:
+        repeat_days = int(repeat_days_str)
+        reminder_str = processed_reminder_str
 
-    log.debug('try to parse "%s"' % rem)
-
-    warnDays, newrem = has_warning(rem)
-    if warnDays:
-        warnDays = int(warnDays)
-        rem = newrem
-
-    repeatDays, newrem = has_repeat(rem)
-    if repeatDays:
-        repeatDays = int(repeatDays)
-        rem = newrem
-
-    type, now = single_day(rem, today)
-    if type and now:
+    # Attempt to parse the reminder string using various date formats
+    is_parsed_ok, is_today_match = single_day(reminder_str, today)
+    if is_parsed_ok and is_today_match:
         return True
-    if type and not now:
+    if is_parsed_ok and not is_today_match:
         return False
 
-    type, now = multi_day(rem, today)
-    if type and now:
+    is_parsed_ok, is_today_match = multi_day(reminder_str, today)
+    if is_parsed_ok and is_today_match:
         return True
-    if type and not now:
+    if is_parsed_ok and not is_today_match:
         return False
 
-    type, now = single_do_w(rem, today)
-    if type and now:
+    is_parsed_ok, is_today_match = single_weekday(reminder_str, today)
+    if is_parsed_ok and is_today_match:
         return True
-    if type and not now:
+    if is_parsed_ok and not is_today_match:
         return False
 
-    type, now = multi_do_w(rem, today)
-    if type and now:
+    is_parsed_ok, is_today_match = multi_weekday(reminder_str, today)
+    if is_parsed_ok and is_today_match:
         return True
-    if type and not now:
+    if is_parsed_ok and not is_today_match:
         return False
 
-    type, now = month_day(rem, today, warn=warnDays, rep=repeatDays)
-    if type and now:
+    is_parsed_ok, is_today_match = month_day(
+        reminder_str, today, warning_days=warning_days, repeat_days=repeat_days
+    )
+    if is_parsed_ok and is_today_match:
         return True
-    if type and not now:
+    if is_parsed_ok and not is_today_match:
         return False
 
-    type, now = month_day_year(rem, today, warn=warnDays, rep=repeatDays)
-    if type and now:
+    is_parsed_ok, is_today_match = month_day_year(
+        reminder_str, today, warning_days=warning_days, repeat_days=repeat_days
+    )
+    if is_parsed_ok and is_today_match:
         return True
-    if type and not now:
+    if is_parsed_ok and not is_today_match:
         return False
 
 
 def add_today_tasks(config_file):
-    """Add tasks occuring today from the config file to the todo list"""
+    """Add tasks occurring today from the config file to the todo list."""
 
     today = time.localtime()
-    today_date = time.strftime('%F', time.localtime())
-    rem = get_dict(config_file)
-    for k, v in list(rem.items()):
-        log.info('processing item [%s] = %s' % (k, v))
+    today_date_str = time.strftime('%F', today)
+    reminders_config = get_dict(config_file)
 
-        date = re.search(REMINDER_RE, k)
-        if date:
-            isToday = parse_rem(
-                date.group(1), today
-            )  # date.group(1) = date in Remind format: Wed, 18 +3, Jan 26 +4
-            if isToday:
-                for task in v:
-                    if task_exists(task, today_date):
-                        log.info('task exists: %s' % task)
+    for date_pattern_str, tasks in reminders_config.items():
+        log.info(f'Processing item [{date_pattern_str}] = {tasks}')
+
+        matched_date_group = re.search(REMINDER_RE, date_pattern_str)
+        if matched_date_group:
+            # matched_date_group.group(1) is the date in Remind format (e.g., Wed, 18 +3, Jan 26 +4)
+            is_match_today = parse_rem(matched_date_group.group(1), today)
+            if is_match_today:
+                for task in tasks:
+                    if task_exists(task, today_date_str):
+                        log.info(f'Task already exists: {task}')
                         continue
-                    log.info('adding task %s' % task)
-                    add_task(task, today_date)
+                    log.info(f'Adding task: {task}')
+                    add_task(task, today_date_str)
         else:
-            log.info('unable to parse date from "%s %s"' % (k, v))
+            log.info(f'Unable to parse date from "{date_pattern_str} {tasks}"')
 
 
-def task_exists(rem, date):
-    """Check for existing task for a date in the TODO file"""
+def task_exists(task, date_str):
+    """Check for an existing task for a given date in the TODO file."""
 
-    tasks = get_tasks(date)
-    log.debug('tasks found for %s: %s' % (date, tasks))
-    log.debug('rem: %s' % rem)
-    if rem in tasks:
+    tasks = get_tasks(date_str)
+    log.debug(f'Tasks found for {date_str}: {tasks}')
+    log.debug(f'Checking for task: {task}')
+    if task in tasks:
         return True
     else:
         return False
 
 
 def get_dict(config_file):
-    config = {}
+    """Parse the recurrence config file into a dictionary."""
+    recurrence_config = {}
     if not os.path.isfile(config_file):
-        log.error('config file {} does not exist'.format(config_file))
+        log.error(f'Config file {config_file} does not exist')
         sys.exit(1)
 
     with open(config_file) as fd:
         for line in fd.readlines():
             pos = line.rfind('}')
             if pos == -1:
-                log.error('unable to parse line "%s"' % line)
+                log.error(f'Unable to parse line "{line.strip()}"')
                 continue
             date = line[: pos + 1].strip()
             task = line[pos + 1 :].strip()
-            if date in list(config.keys()):
-                config[date].append(task)
+            if date in recurrence_config:
+                recurrence_config[date].append(task)
             else:
-                config[date] = [task]
-    return config
+                recurrence_config[date] = [task]
+    return recurrence_config
 
 
-def add_task(task, date):
+def add_task(task, date_str):
+    """Add a new task to the TODO file."""
     with open(TODO_FILE, 'r+') as fd:
         content = fd.read()
         fd.seek(0)
-        fd.write('- [ ] %s t:%s\n%s' % (task, date, content))
+        fd.write(f'- [ ] {task} t:{date_str}\n{content}')
 
 
-def get_tasks(date):
-    """get tasks from todo file for date"""
+def get_tasks(date_str):
+    """Get tasks from todo file for a specific date."""
 
     tasks = []
     with open(TODO_FILE) as fd:
@@ -350,19 +360,15 @@ def get_tasks(date):
             if not match:
                 continue
             match_dict = match.groupdict()
-            if match_dict['date'] == date:
-                # add task with and w/h priority tag to get also tasks where priority was added later
-                task = '%s%s' % (
-                    match_dict['task_head'],
-                    match_dict['task_tail'],
+            if match_dict['date'] == date_str:
+                # Add task with and without priority tag to also get tasks where priority was added later.
+                task = ' '.join(
+                    f'{match_dict["task_head"]}{match_dict["task_tail"]}'.split()
                 )
-                tasks.append(' '.join(task.split()))
+
+                tasks.append(task)
                 if match_dict['priority']:
-                    task = '%s %s' % (
-                        match_dict['priority'],
-                        task,
-                    )
-                    tasks.append(' '.join(task.split()))
+                    tasks.append(f'{match_dict["priority"]} {task}')
 
     return tasks
 
@@ -386,12 +392,12 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    loglevel = logging.WARN
+    log_level = logging.WARN
     if args.verbose == 1:
-        loglevel = logging.INFO
+        log_level = logging.INFO
     if args.verbose >= 2:
-        loglevel = logging.DEBUG
-    log.setLevel(loglevel)
+        log_level = logging.DEBUG
+    log.setLevel(log_level)
 
     if args.todo_dir:
         TODO_DIR = args.todo_dir
